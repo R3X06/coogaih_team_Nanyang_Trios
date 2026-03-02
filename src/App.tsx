@@ -3,6 +3,7 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { UserProvider } from "@/contexts/UserContext";
 import AppLayout from "@/components/AppLayout";
 import Dashboard from "@/pages/Dashboard";
 import StartSession from "@/pages/StartSession";
@@ -19,17 +20,19 @@ const App = () => (
       <Toaster />
       <Sonner />
       <BrowserRouter>
-        <AppLayout>
-          <Routes>
-            <Route path="/" element={<Dashboard />} />
-            <Route path="/session/start" element={<StartSession />} />
-            <Route path="/session/debrief/:sessionId" element={<SessionDebrief />} />
-            <Route path="/session/quiz/:sessionId" element={<MicroCheck />} />
-            <Route path="/history" element={<SessionHistory />} />
-            <Route path="/history/:sessionId" element={<SessionHistory />} />
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-        </AppLayout>
+        <UserProvider>
+          <AppLayout>
+            <Routes>
+              <Route path="/" element={<Dashboard />} />
+              <Route path="/session/start" element={<StartSession />} />
+              <Route path="/session/debrief/:sessionId" element={<SessionDebrief />} />
+              <Route path="/session/quiz/:sessionId" element={<MicroCheck />} />
+              <Route path="/history" element={<SessionHistory />} />
+              <Route path="/history/:sessionId" element={<SessionHistory />} />
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          </AppLayout>
+        </UserProvider>
       </BrowserRouter>
     </TooltipProvider>
   </QueryClientProvider>

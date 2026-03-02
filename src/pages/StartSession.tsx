@@ -1,23 +1,42 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useStudySessions } from '@/hooks/useStudyData';
-import { DEFAULT_USER_ID, type TelemetryEntry } from '@/types/session';
+import { useUser } from '@/contexts/UserContext';
+import { createSession, updateSession } from '@/services/api';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
-import { Play, Pause, Square, Brain, AlertCircle, Gauge } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Play, Pause, Square, Gauge, Activity, Timer } from 'lucide-react';
+
+const GOAL_TYPES = [
+  { value: 'revision', label: 'Revision' },
+  { value: 'practice', label: 'Practice' },
+  { value: 'research', label: 'Research' },
+  { value: 'notes', label: 'Notes' },
+  { value: 'mixed', label: 'Mixed' },
+] as const;
 
 export default function StartSession() {
   const navigate = useNavigate();
-  const { addSession, updateSession } = useStudySessions();
+  const { user } = useUser();
+
+  const [goalType, setGoalType] = useState<string>('mixed');
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [running, setRunning] = useState(false);
   const [elapsed, setElapsed] = useState(0);
-  const [focusLevel, setFocusLevel] = useState(7);
-  const [telemetry, setTelemetry] = useState<TelemetryEntry[]>([]);
-  const [simMode, setSimMode] = useState(false);
+  const [startTime, setStartTime] = useState<string | null>(null);
   const intervalRef = useRef<number | null>(null);
-  const simRef = useRef<number | null>(null);
+
+  // Telemetry
+  const [researchRatio, setResearchRatio] = useState(0.25);
+  const [notesRatio, setNotesRatio] = useState(0.25);
+  const [practiceRatio, setPracticeRatio] = useState(0.25);
+  const [distractionRatio, setDistractionRatio] = useState(0.25);
+  const [fragmentation, setFragmentation] = useState(0.3);
+  const [avgFocusBlockMin, setAvgFocusBlockMin] = useState(15);
+  const [switchingRate, setSwitchingRate] = useState(0.2);
+  const [switchesCount, setSwitchesCount] = useState(5);
 
   const formatTime = (s: number) => {
     const m = Math.floor(s / 60);
@@ -25,48 +44,64 @@ export default function StartSession() {
     return `${m.toString().padStart(2, '0')}:${sec.toString().padStart(2, '0')}`;
   };
 
-  const handleStart = () => {
-    const id = crypto.randomUUID();
-    const session = {
-      id,
-      userId: DEFAULT_USER_ID,
-      startTime: new Date().toISOString(),
-      status: 'active' as const,
-      telemetry: [],
-    };
-    addSession(session);
-    setSessionId(id);
-    setRunning(true);
-    setElapsed(0);
-    setTelemetry([]);
+  // Auto-normalize ratios
+  const normalize = (changed: string, newVal: number) => {
+    const vals: Record<string, number> = { research: researchRatio, notes: notesRatio, practice: practiceRatio, distraction: distractionRatio };
+    vals[changed] = newVal;
+    const others = Object.keys(vals).filter(k => k !== changed);
+    const otherSum = others.reduce((a, k) => a + vals[k], 0);
+    const remaining = Math.max(0, 1 - newVal);
+    if (otherSum > 0) {
+      others.forEach(k => { vals[k] = (vals[k] / otherSum) * remaining; });
+    } else {
+      others.forEach(k => { vals[k] = remaining / others.length; });
+    }
+    setResearchRatio(Math.round(vals.research * 1000) / 1000);
+    setNotesRatio(Math.round(vals.notes * 1000) / 1000);
+    setPracticeRatio(Math.round(vals.practice * 1000) / 1000);
+    setDistractionRatio(Math.round(vals.distraction * 1000) / 1000);
+  };
+
+  const handleStart = async () => {
+    if (!user) return;
+    const now = new Date().toISOString();
+    setStartTime(now);
+    try {
+      const session = await createSession({
+        user_id: user.id,
+        goal_type: goalType as any,
+        start_time: now,
+      });
+      setSessionId(session.id);
+      setRunning(true);
+      setElapsed(0);
+    } catch (e) { console.error(e); }
   };
 
   const handlePause = () => setRunning(prev => !prev);
 
-  const handleStop = () => {
+  const handleStop = async () => {
     setRunning(false);
     if (intervalRef.current) clearInterval(intervalRef.current);
-    if (simRef.current) clearInterval(simRef.current);
-    if (sessionId) {
-      updateSession(sessionId, {
-        endTime: new Date().toISOString(),
-        duration: elapsed,
-        telemetry,
+    if (!sessionId) return;
+    const endTime = new Date().toISOString();
+    try {
+      await updateSession(sessionId, {
+        end_time: endTime,
+        duration_sec: elapsed,
+        research_ratio: researchRatio,
+        notes_ratio: notesRatio,
+        practice_ratio: practiceRatio,
+        distraction_ratio: distractionRatio,
+        fragmentation,
+        avg_focus_block_minutes: avgFocusBlockMin,
+        switching_rate: switchingRate,
+        switches_count: switchesCount,
       });
       navigate(`/session/debrief/${sessionId}`);
-    }
+    } catch (e) { console.error(e); }
   };
 
-  const recordTelemetry = useCallback(() => {
-    const entry: TelemetryEntry = {
-      timestamp: new Date().toISOString(),
-      focusLevel,
-      distractionFlag: focusLevel < 4,
-    };
-    setTelemetry(prev => [...prev, entry]);
-  }, [focusLevel]);
-
-  // Timer
   useEffect(() => {
     if (running) {
       intervalRef.current = window.setInterval(() => setElapsed(e => e + 1), 1000);
@@ -76,30 +111,12 @@ export default function StartSession() {
     return () => { if (intervalRef.current) clearInterval(intervalRef.current); };
   }, [running]);
 
-  // Simulated telemetry
-  useEffect(() => {
-    if (running && simMode) {
-      simRef.current = window.setInterval(() => {
-        const simFocus = Math.max(1, Math.min(10, focusLevel + Math.floor(Math.random() * 5) - 2));
-        setFocusLevel(simFocus);
-        const entry: TelemetryEntry = {
-          timestamp: new Date().toISOString(),
-          focusLevel: simFocus,
-          distractionFlag: simFocus < 4,
-        };
-        setTelemetry(prev => [...prev, entry]);
-      }, 5000);
-    } else if (simRef.current) {
-      clearInterval(simRef.current);
-    }
-    return () => { if (simRef.current) clearInterval(simRef.current); };
-  }, [running, simMode]);
-
-  const avgFocus = telemetry.length > 0
-    ? (telemetry.reduce((a, t) => a + t.focusLevel, 0) / telemetry.length).toFixed(1)
-    : '—';
-
-  const distractions = telemetry.filter(t => t.distractionFlag).length;
+  const ratioSliders = [
+    { label: 'Research', value: researchRatio, key: 'research', color: 'text-info' },
+    { label: 'Notes', value: notesRatio, key: 'notes', color: 'text-success' },
+    { label: 'Practice', value: practiceRatio, key: 'practice', color: 'text-primary' },
+    { label: 'Distraction', value: distractionRatio, key: 'distraction', color: 'text-destructive' },
+  ];
 
   return (
     <div className="max-w-2xl mx-auto space-y-6 animate-fade-in">
@@ -108,10 +125,31 @@ export default function StartSession() {
         <p className="text-muted-foreground text-sm">Focus. Learn. Grow.</p>
       </div>
 
+      {/* Goal Type */}
+      {!sessionId && (
+        <Card className="shadow-card border-border gradient-card">
+          <CardHeader>
+            <CardTitle className="text-sm flex items-center gap-2"><Timer className="h-4 w-4 text-primary" /> Session Goal</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <Select value={goalType} onValueChange={setGoalType}>
+              <SelectTrigger className="bg-accent/30">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {GOAL_TYPES.map(g => (
+                  <SelectItem key={g.value} value={g.value}>{g.label}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Timer */}
-      <Card className="shadow-card border-border text-center">
+      <Card className="shadow-card border-border gradient-card text-center">
         <CardContent className="py-10">
-          <div className={`text-7xl font-mono font-bold tracking-wider mb-6 ${running ? 'text-primary animate-pulse-glow' : 'text-foreground'}`}>
+          <div className={`text-7xl font-mono font-bold tracking-wider mb-6 ${running ? 'text-gradient animate-pulse-glow' : 'text-foreground'}`}>
             {formatTime(elapsed)}
           </div>
           <div className="flex justify-center gap-3">
@@ -134,85 +172,62 @@ export default function StartSession() {
         </CardContent>
       </Card>
 
-      {/* Telemetry Controls */}
+      {/* Telemetry Panel */}
       {sessionId && (
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          {/* Manual Focus Input */}
-          <Card className="shadow-card border-border">
-            <CardHeader>
-              <CardTitle className="text-sm flex items-center gap-2">
-                <Gauge className="h-4 w-4 text-primary" /> Focus Level
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <Slider
-                value={[focusLevel]}
-                onValueChange={([v]) => setFocusLevel(v)}
-                min={1} max={10} step={1}
-              />
-              <div className="flex justify-between text-xs text-muted-foreground">
-                <span>Distracted (1)</span>
-                <span className="text-lg font-bold text-primary">{focusLevel}</span>
-                <span>Deep Focus (10)</span>
-              </div>
-              <Button onClick={recordTelemetry} variant="outline" className="w-full" disabled={!running}>
-                Record Snapshot
-              </Button>
-            </CardContent>
-          </Card>
-
-          {/* Telemetry Panel */}
-          <Card className="shadow-card border-border">
-            <CardHeader>
-              <CardTitle className="text-sm flex items-center gap-2">
-                <Brain className="h-4 w-4 text-primary" /> Attention Telemetry
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              <div className="flex justify-between text-sm">
-                <span className="text-muted-foreground">Readings</span>
-                <span className="font-medium">{telemetry.length}</span>
-              </div>
-              <div className="flex justify-between text-sm">
-                <span className="text-muted-foreground">Avg Focus</span>
-                <span className="font-medium text-info">{avgFocus}</span>
-              </div>
-              <div className="flex justify-between text-sm">
-                <span className="text-muted-foreground">Distractions</span>
-                <span className="font-medium text-destructive">{distractions}</span>
-              </div>
-              <label className="flex items-center gap-2 text-sm cursor-pointer pt-2 border-t border-border">
-                <input
-                  type="checkbox"
-                  checked={simMode}
-                  onChange={e => setSimMode(e.target.checked)}
-                  className="rounded border-border accent-primary"
-                />
-                <span className="text-muted-foreground">Simulate telemetry</span>
-              </label>
-            </CardContent>
-          </Card>
-        </div>
-      )}
-
-      {/* Focus Timeline */}
-      {telemetry.length > 0 && (
-        <Card className="shadow-card border-border">
+        <Card className="shadow-card border-border gradient-card">
           <CardHeader>
             <CardTitle className="text-sm flex items-center gap-2">
-              <AlertCircle className="h-4 w-4 text-primary" /> Focus Timeline
+              <Gauge className="h-4 w-4 text-primary" /> Attention Telemetry
             </CardTitle>
           </CardHeader>
-          <CardContent>
-            <div className="flex items-end gap-1 h-20">
-              {telemetry.slice(-40).map((t, i) => (
-                <div
-                  key={i}
-                  className={`flex-1 rounded-t transition-all ${t.distractionFlag ? 'bg-destructive/60' : 'bg-primary/60'}`}
-                  style={{ height: `${(t.focusLevel / 10) * 100}%` }}
-                  title={`Focus: ${t.focusLevel}`}
-                />
-              ))}
+          <CardContent className="space-y-5">
+            {/* Activity ratios */}
+            <div>
+              <p className="text-xs text-muted-foreground uppercase tracking-wider mb-3">Activity Distribution (auto-normalized to 100%)</p>
+              <div className="space-y-3">
+                {ratioSliders.map(s => (
+                  <div key={s.key} className="space-y-1">
+                    <div className="flex justify-between text-sm">
+                      <span className={`font-medium ${s.color}`}>{s.label}</span>
+                      <span className="text-muted-foreground">{(s.value * 100).toFixed(0)}%</span>
+                    </div>
+                    <Slider value={[s.value]} onValueChange={([v]) => normalize(s.key, v)} min={0} max={1} step={0.01} />
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Other telemetry */}
+            <div className="grid grid-cols-2 gap-4 pt-3 border-t border-border">
+              <div className="space-y-1">
+                <label className="text-xs text-muted-foreground">Fragmentation</label>
+                <Slider value={[fragmentation]} onValueChange={([v]) => setFragmentation(v)} min={0} max={1} step={0.01} />
+                <span className="text-xs text-muted-foreground">{(fragmentation * 100).toFixed(0)}%</span>
+              </div>
+              <div className="space-y-1">
+                <label className="text-xs text-muted-foreground">Switching Rate</label>
+                <Slider value={[switchingRate]} onValueChange={([v]) => setSwitchingRate(v)} min={0} max={1} step={0.01} />
+                <span className="text-xs text-muted-foreground">{(switchingRate * 100).toFixed(0)}%</span>
+              </div>
+              <div className="space-y-1">
+                <label className="text-xs text-muted-foreground">Avg Focus Block (min)</label>
+                <Input type="number" value={avgFocusBlockMin} onChange={e => setAvgFocusBlockMin(Number(e.target.value))} min={0} className="bg-accent/30 h-8" />
+              </div>
+              <div className="space-y-1">
+                <label className="text-xs text-muted-foreground">Switches Count</label>
+                <Input type="number" value={switchesCount} onChange={e => setSwitchesCount(Number(e.target.value))} min={0} className="bg-accent/30 h-8" />
+              </div>
+            </div>
+
+            {/* Visual bar */}
+            <div className="pt-3 border-t border-border">
+              <p className="text-xs text-muted-foreground mb-2">Activity Profile</p>
+              <div className="flex rounded-lg overflow-hidden h-6">
+                <div style={{ width: `${researchRatio * 100}%` }} className="bg-info/70" title="Research" />
+                <div style={{ width: `${notesRatio * 100}%` }} className="bg-success/70" title="Notes" />
+                <div style={{ width: `${practiceRatio * 100}%` }} className="bg-primary/70" title="Practice" />
+                <div style={{ width: `${distractionRatio * 100}%` }} className="bg-destructive/70" title="Distraction" />
+              </div>
             </div>
           </CardContent>
         </Card>
