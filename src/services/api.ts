@@ -190,6 +190,21 @@ export async function callAdviceGenerate(input: AdviceGenerateInput): Promise<Ad
 }
 
 // ============================================================
+// 6) POST /advice/validate (Evaluator)
+// ============================================================
+export interface AdviceValidateInput {
+  diagnoser_output: any;
+  planner_output: any;
+  original_metrics: any;
+}
+
+export async function callAdviceValidate(input: AdviceValidateInput): Promise<any> {
+  const { data, error } = await supabase.functions.invoke('advice-validate', { body: input });
+  if (error) throw error;
+  return data;
+}
+
+// ============================================================
 // Supabase DB operations (unchanged)
 // ============================================================
 
