@@ -5,8 +5,9 @@ import { getSessions, getSession, getQuizBySession, getQuizAttempts, getLatestRe
 import type { Tables } from '@/integrations/supabase/types';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Clock, Target, Activity, Brain, ChevronRight } from 'lucide-react';
+import { ArrowLeft, Clock, Target, Activity, Brain, ChevronRight, MapPin } from 'lucide-react';
 import AttentionAudit from '@/components/AttentionAudit';
+import SessionMappingModal from '@/components/SessionMappingModal';
 
 export default function SessionHistory() {
   const { sessionId } = useParams();
@@ -80,6 +81,7 @@ function SessionDetail({ sessionId }: { sessionId: string }) {
   const [quizScore, setQuizScore] = useState<number | null>(null);
   const [recommendation, setRecommendation] = useState<Tables<'recommendations'> | null>(null);
   const [loading, setLoading] = useState(true);
+  const [mappingOpen, setMappingOpen] = useState(false);
 
   useEffect(() => {
     const load = async () => {
@@ -108,13 +110,28 @@ function SessionDetail({ sessionId }: { sessionId: string }) {
 
   return (
     <div className="max-w-2xl mx-auto space-y-6 animate-fade-in">
-      <div className="flex items-center gap-3">
-        <Link to="/history"><Button variant="ghost" size="icon"><ArrowLeft className="h-4 w-4" /></Button></Link>
-        <div>
-          <h1 className="font-display text-2xl text-gradient">Session Detail</h1>
-          <p className="text-muted-foreground text-sm">{new Date(session.start_time).toLocaleString()} · {session.goal_type}</p>
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <Link to="/history"><Button variant="ghost" size="icon"><ArrowLeft className="h-4 w-4" /></Button></Link>
+          <div>
+            <h1 className="font-display text-2xl text-gradient">Session Detail</h1>
+            <p className="text-muted-foreground text-sm">{new Date(session.start_time).toLocaleString()} · {session.goal_type}</p>
+          </div>
         </div>
+        <Button variant="outline" className="border-primary/30" onClick={() => setMappingOpen(true)}>
+          <MapPin className="h-4 w-4 mr-2" /> {session.subject_id ? 'Remap' : 'Map Session'}
+        </Button>
       </div>
+
+      <SessionMappingModal
+        sessionId={sessionId}
+        currentSubjectId={session.subject_id}
+        currentChapterId={session.chapter_id}
+        currentTopicId={session.primary_topic_id}
+        open={mappingOpen}
+        onOpenChange={setMappingOpen}
+        onSaved={() => getSession(sessionId).then(setSession)}
+      />
 
       {/* Metrics */}
       <div className="grid grid-cols-3 gap-3">

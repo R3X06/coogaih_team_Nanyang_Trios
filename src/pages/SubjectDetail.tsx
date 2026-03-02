@@ -1,14 +1,16 @@
 import { useEffect, useState, useMemo } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useUser } from '@/contexts/UserContext';
-import { getSubject, getChaptersBySubject, getTopicsByChapter, getLatestSnapshots, getSessionsBySubject, getQuizBySession, getQuizAttempts, getLatestRecommendation } from '@/services/api';
+import { getSubject, getChaptersBySubject, getTopicsByChapter, getLatestSnapshots, getSessionsBySubject, getManualLogsBySubject } from '@/services/api';
 import type { Tables } from '@/integrations/supabase/types';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Progress } from '@/components/ui/progress';
-import { ChevronDown, ChevronRight, ArrowUp, ArrowDown, Minus, AlertTriangle, Info, BookOpen, Grid3X3, History } from 'lucide-react';
+import { ChevronDown, ChevronRight, ArrowUp, ArrowDown, Minus, AlertTriangle, BookOpen, Grid3X3, Activity, Play, PenLine, MapPin } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 import TrajectoryMap from '@/components/TrajectoryMap';
+import TopicDetailDrawer from '@/components/TopicDetailDrawer';
+import SessionMappingModal from '@/components/SessionMappingModal';
 
 interface ChapterWithTopics {
   chapter: Tables<'chapters'>;
@@ -22,34 +24,43 @@ export default function SubjectDetail() {
   const [chaptersData, setChaptersData] = useState<ChapterWithTopics[]>([]);
   const [snapshots, setSnapshots] = useState<Tables<'state_snapshots'>[]>([]);
   const [sessions, setSessions] = useState<Tables<'sessions'>[]>([]);
+  const [manualLogs, setManualLogs] = useState<any[]>([]);
   const [expandedChapter, setExpandedChapter] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
+  // Topic drawer
+  const [drawerOpen, setDrawerOpen] = useState(false);
+  const [drawerTopic, setDrawerTopic] = useState<{ id: string; name: string; chapterName: string; chapterId: string } | null>(null);
+
+  // Session mapping modal
+  const [mappingSessionId, setMappingSessionId] = useState<string | null>(null);
+
+  const loadData = async () => {
     if (!subjectId || !user) return;
-    (async () => {
-      setLoading(true);
-      try {
-        const [subj, chapters, allSnaps, sess] = await Promise.all([
-          getSubject(subjectId),
-          getChaptersBySubject(subjectId),
-          getLatestSnapshots(user.id),
-          getSessionsBySubject(user.id, subjectId),
-        ]);
-        setSubject(subj);
-        setSessions(sess);
-        setSnapshots(allSnaps);
+    setLoading(true);
+    try {
+      const [subj, chapters, allSnaps, sess, logs] = await Promise.all([
+        getSubject(subjectId),
+        getChaptersBySubject(subjectId),
+        getLatestSnapshots(user.id),
+        getSessionsBySubject(user.id, subjectId),
+        getManualLogsBySubject(user.id, subjectId),
+      ]);
+      setSubject(subj);
+      setSessions(sess);
+      setManualLogs(logs);
+      setSnapshots(allSnaps);
 
-        const withTopics: ChapterWithTopics[] = await Promise.all(
-          chapters.map(async ch => ({ chapter: ch, topics: await getTopicsByChapter(ch.id) }))
-        );
-        setChaptersData(withTopics);
-      } catch (e) { console.error(e); }
-      setLoading(false);
-    })();
-  }, [subjectId, user]);
+      const withTopics: ChapterWithTopics[] = await Promise.all(
+        chapters.map(async ch => ({ chapter: ch, topics: await getTopicsByChapter(ch.id) }))
+      );
+      setChaptersData(withTopics);
+    } catch (e) { console.error(e); }
+    setLoading(false);
+  };
 
-  // All topic IDs in this subject
+  useEffect(() => { loadData(); }, [subjectId, user]);
+
   const allTopicIds = useMemo(() => chaptersData.flatMap(c => c.topics.map(t => t.id)), [chaptersData]);
   const allTopicNames = useMemo(() => {
     const map = new Map<string, string>();
@@ -57,23 +68,19 @@ export default function SubjectDetail() {
     return map;
   }, [chaptersData]);
 
-  // Latest snapshot per topic (matching topic IDs or names)
   const latestByTopic = useMemo(() => {
     const map = new Map<string, Tables<'state_snapshots'>>();
     for (const s of snapshots) {
-      const key = s.topic_tag;
-      if (!map.has(key)) map.set(key, s);
+      if (!map.has(s.topic_tag)) map.set(s.topic_tag, s);
     }
     return map;
   }, [snapshots]);
 
-  // Filter snapshots relevant to this subject's topics
   const subjectSnapshots = useMemo(() => {
     const topicSet = new Set([...allTopicIds, ...Array.from(allTopicNames.values())]);
     return snapshots.filter(s => topicSet.has(s.topic_tag));
   }, [snapshots, allTopicIds, allTopicNames]);
 
-  // Aggregations
   const getTopicSnap = (topicId: string, topicName: string) => latestByTopic.get(topicId) || latestByTopic.get(topicName);
 
   const computeChapterMetrics = (topics: Tables<'topics'>[]) => {
@@ -101,6 +108,20 @@ export default function SubjectDetail() {
     if (risk >= 0.35) return <span className="h-2.5 w-2.5 rounded-full bg-warning inline-block" />;
     return <span className="h-2.5 w-2.5 rounded-full bg-success inline-block" />;
   };
+
+  const openTopicDrawer = (topic: Tables<'topics'>, chapterName: string, chapterId: string) => {
+    setDrawerTopic({ id: topic.id, name: topic.name, chapterName, chapterId });
+    setDrawerOpen(true);
+  };
+
+  // Combined activity feed
+  const activityFeed = useMemo(() => {
+    const items = [
+      ...sessions.map(s => ({ type: 'session' as const, id: s.id, date: s.start_time, goal: s.goal_type, duration: s.duration_sec, confidence: s.confidence_post, difficulty: s.difficulty_post, mapped: !!s.subject_id })),
+      ...manualLogs.map((l: any) => ({ type: 'log' as const, id: l.id, date: l.created_at, goal: l.activity_type, duration: l.duration_sec, confidence: l.confidence_post, difficulty: l.difficulty_post, issues: l.issues_faced, mapped: true })),
+    ];
+    return items.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+  }, [sessions, manualLogs]);
 
   if (loading) {
     return <div className="flex justify-center py-16"><div className="h-8 w-8 border-2 border-primary border-t-transparent rounded-full animate-spin" /></div>;
@@ -152,12 +173,12 @@ export default function SubjectDetail() {
         <TabsList className="bg-accent/30">
           <TabsTrigger value="chapters" className="gap-1.5"><BookOpen className="h-3.5 w-3.5" /> Chapters</TabsTrigger>
           <TabsTrigger value="gaps" className="gap-1.5"><Grid3X3 className="h-3.5 w-3.5" /> Gap Radar</TabsTrigger>
-          <TabsTrigger value="history" className="gap-1.5"><History className="h-3.5 w-3.5" /> Practice History</TabsTrigger>
+          <TabsTrigger value="activity" className="gap-1.5"><Activity className="h-3.5 w-3.5" /> Activity</TabsTrigger>
         </TabsList>
 
         {/* CHAPTERS TAB */}
         <TabsContent value="chapters" className="space-y-3 mt-4">
-          {chaptersData.length === 0 && <p className="text-muted-foreground text-sm text-center py-8">No chapters yet. Add chapters in Config.</p>}
+          {chaptersData.length === 0 && <p className="text-muted-foreground text-sm text-center py-8">No chapters yet. <Link to="/manage/subjects" className="text-primary hover:underline">Add chapters</Link>.</p>}
           {chaptersData.map(({ chapter, topics }) => {
             const m = computeChapterMetrics(topics);
             const expanded = expandedChapter === chapter.id;
@@ -189,7 +210,11 @@ export default function SubjectDetail() {
                         const stab = snap?.stability || 0;
                         const risk = snap?.risk_score || 0;
                         return (
-                          <div key={topic.id} className="flex items-center justify-between py-1.5 px-3 rounded bg-accent/20 text-sm">
+                          <button
+                            key={topic.id}
+                            className="w-full flex items-center justify-between py-1.5 px-3 rounded bg-accent/20 text-sm hover:bg-accent/40 transition-colors"
+                            onClick={() => openTopicDrawer(topic, chapter.name, chapter.id)}
+                          >
                             <div className="flex items-center gap-2">
                               {riskDot(risk)}
                               <span className="text-foreground">{topic.name}</span>
@@ -199,7 +224,7 @@ export default function SubjectDetail() {
                               <span>{(str * 100).toFixed(0)}%</span>
                               <span>{(stab * 100).toFixed(0)}%</span>
                             </div>
-                          </div>
+                          </button>
                         );
                       })}
                     </div>
@@ -215,45 +240,83 @@ export default function SubjectDetail() {
           <Card className="shadow-card border-border gradient-card">
             <CardHeader><CardTitle className="text-sm text-gradient">Knowledge Gap Heatmap</CardTitle></CardHeader>
             <CardContent>
-              <GapHeatmap chaptersData={chaptersData} getTopicSnap={getTopicSnap} />
+              <GapHeatmap chaptersData={chaptersData} getTopicSnap={getTopicSnap} onTopicClick={(topicId) => {
+                for (const { chapter, topics } of chaptersData) {
+                  const t = topics.find(t => t.id === topicId || t.name === topicId);
+                  if (t) { openTopicDrawer(t, chapter.name, chapter.id); return; }
+                }
+              }} />
             </CardContent>
           </Card>
         </TabsContent>
 
-        {/* PRACTICE HISTORY TAB */}
-        <TabsContent value="history" className="mt-4 space-y-3">
-          {sessions.length === 0 && <p className="text-muted-foreground text-sm text-center py-8">No sessions for this subject yet.</p>}
-          {sessions.map(s => (
-            <Card key={s.id} className="shadow-card border-border gradient-card">
+        {/* ACTIVITY TAB */}
+        <TabsContent value="activity" className="mt-4 space-y-3">
+          {activityFeed.length === 0 && <p className="text-muted-foreground text-sm text-center py-8">No sessions or logs for this subject yet.</p>}
+          {activityFeed.map(item => (
+            <Card key={item.id} className="shadow-card border-border gradient-card">
               <CardContent className="py-3">
                 <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-medium text-foreground">{new Date(s.start_time).toLocaleDateString()} · {s.goal_type}</p>
-                    <p className="text-xs text-muted-foreground">
-                      {s.duration_sec ? `${Math.floor(s.duration_sec / 60)}m` : '—'} · Topics: {(s.topic_tags || []).join(', ') || '—'}
-                    </p>
+                  <div className="flex items-center gap-2">
+                    {item.type === 'session' ? <Play className="h-3.5 w-3.5 text-primary" /> : <PenLine className="h-3.5 w-3.5 text-primary" />}
+                    <div>
+                      <p className="text-sm font-medium text-foreground">
+                        {new Date(item.date).toLocaleDateString()} · <span className="capitalize">{item.goal}</span>
+                        <span className="text-[10px] ml-2 text-muted-foreground">{item.type === 'session' ? 'Timer' : 'Manual'}</span>
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        {item.duration ? `${Math.floor(item.duration / 60)}m` : '—'}
+                        {item.confidence && ` · Conf: ${item.confidence}/5`}
+                        {item.difficulty && ` · Diff: ${item.difficulty}/5`}
+                      </p>
+                    </div>
                   </div>
-                  <div className="flex gap-3 text-xs text-muted-foreground">
-                    {s.confidence_post && <span>Conf: {s.confidence_post}/5</span>}
-                    {s.difficulty_post && <span>Diff: {s.difficulty_post}/5</span>}
-                  </div>
+                  {item.type === 'session' && !item.mapped && (
+                    <Button variant="ghost" size="sm" className="text-primary text-xs" onClick={() => setMappingSessionId(item.id)}>
+                      <MapPin className="h-3 w-3 mr-1" /> Map
+                    </Button>
+                  )}
                 </div>
               </CardContent>
             </Card>
           ))}
         </TabsContent>
       </Tabs>
+
+      {/* Topic Detail Drawer */}
+      {drawerTopic && (
+        <TopicDetailDrawer
+          open={drawerOpen}
+          onOpenChange={setDrawerOpen}
+          topicId={drawerTopic.id}
+          topicName={drawerTopic.name}
+          chapterName={drawerTopic.chapterName}
+          subjectName={subject.name}
+          subjectId={subject.id}
+          chapterId={drawerTopic.chapterId}
+        />
+      )}
+
+      {/* Session Mapping Modal */}
+      {mappingSessionId && (
+        <SessionMappingModal
+          sessionId={mappingSessionId}
+          currentSubjectId={subjectId}
+          open={!!mappingSessionId}
+          onOpenChange={(open) => { if (!open) setMappingSessionId(null); }}
+          onSaved={loadData}
+        />
+      )}
     </div>
   );
 }
 
 // Heatmap sub-component
-function GapHeatmap({ chaptersData, getTopicSnap }: { chaptersData: ChapterWithTopics[]; getTopicSnap: (id: string, name: string) => Tables<'state_snapshots'> | undefined }) {
-  // Flatten all topics with chapter context, sorted by risk desc
+function GapHeatmap({ chaptersData, getTopicSnap, onTopicClick }: { chaptersData: ChapterWithTopics[]; getTopicSnap: (id: string, name: string) => Tables<'state_snapshots'> | undefined; onTopicClick?: (topicId: string) => void }) {
   const items = chaptersData.flatMap(({ chapter, topics }) =>
     topics.map(t => {
       const snap = getTopicSnap(t.id, t.name);
-      return { chapter: chapter.name, topic: t.name, strength: snap?.concept_strength || 0, risk: snap?.risk_score || 0 };
+      return { id: t.id, chapter: chapter.name, topic: t.name, strength: snap?.concept_strength || 0, risk: snap?.risk_score || 0 };
     })
   ).sort((a, b) => b.risk - a.risk);
 
@@ -261,12 +324,16 @@ function GapHeatmap({ chaptersData, getTopicSnap }: { chaptersData: ChapterWithT
 
   return (
     <div className="space-y-1">
-      {items.map((item, i) => {
+      {items.map((item) => {
         const intensity = Math.max(0.1, 1 - item.strength);
         return (
-          <div key={i} className="flex items-center gap-2 text-xs">
-            <span className="w-24 truncate text-muted-foreground">{item.chapter}</span>
-            <span className="w-32 truncate text-foreground font-medium">{item.topic}</span>
+          <button
+            key={item.id}
+            className="flex items-center gap-2 text-xs w-full hover:bg-accent/30 rounded p-1 transition-colors"
+            onClick={() => onTopicClick?.(item.id)}
+          >
+            <span className="w-24 truncate text-muted-foreground text-left">{item.chapter}</span>
+            <span className="w-32 truncate text-foreground font-medium text-left">{item.topic}</span>
             <div className="flex-1 h-5 rounded overflow-hidden bg-muted/30">
               <div
                 className="h-full rounded transition-all"
@@ -277,7 +344,7 @@ function GapHeatmap({ chaptersData, getTopicSnap }: { chaptersData: ChapterWithT
               />
             </div>
             <span className="w-10 text-right text-muted-foreground">{(item.strength * 100).toFixed(0)}%</span>
-          </div>
+          </button>
         );
       })}
     </div>

@@ -34,7 +34,18 @@ export default function ManualLog() {
   const [attachmentUrl, setAttachmentUrl] = useState('');
   const [submitting, setSubmitting] = useState(false);
 
-  useEffect(() => { getSubjects().then(setSubjects).catch(console.error); }, []);
+  useEffect(() => {
+    getSubjects().then(s => {
+      setSubjects(s);
+      // Check for preselection
+      const preSub = sessionStorage.getItem('preselect_subject');
+      const preCh = sessionStorage.getItem('preselect_chapter');
+      const preTopic = sessionStorage.getItem('preselect_topic');
+      if (preSub) { setSelectedSubject(preSub); sessionStorage.removeItem('preselect_subject'); }
+      if (preCh) { setSelectedChapter(preCh); sessionStorage.removeItem('preselect_chapter'); }
+      if (preTopic) { setSelectedTopic(preTopic); sessionStorage.removeItem('preselect_topic'); }
+    }).catch(console.error);
+  }, []);
   useEffect(() => {
     if (selectedSubject) { getChaptersBySubject(selectedSubject).then(setChapters).catch(console.error); setSelectedChapter(''); setSelectedTopic(''); setTopics([]); }
   }, [selectedSubject]);

@@ -7,7 +7,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Slider } from '@/components/ui/slider';
-import { ClipboardList, Plus, X, ArrowRight, Star, Upload } from 'lucide-react';
+import { ClipboardList, Plus, X, ArrowRight, Star, Upload, MapPin } from 'lucide-react';
+import SessionMappingModal from '@/components/SessionMappingModal';
 
 export default function SessionDebrief() {
   const { sessionId } = useParams();
@@ -15,7 +16,7 @@ export default function SessionDebrief() {
   const [session, setSession] = useState<Tables<'sessions'> | null>(null);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
-
+  const [mappingOpen, setMappingOpen] = useState(false);
   const [topicInput, setTopicInput] = useState('');
   const [topics, setTopics] = useState<string[]>([]);
   const [keyPoints, setKeyPoints] = useState(['', '', '']);
@@ -82,10 +83,29 @@ export default function SessionDebrief() {
 
   return (
     <div className="max-w-2xl mx-auto space-y-6 animate-fade-in">
-      <div>
-        <h1 className="font-display text-3xl text-gradient mb-1">Session Debrief</h1>
-        <p className="text-muted-foreground text-sm">Duration: {duration} · Goal: {session?.goal_type || '—'}</p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="font-display text-3xl text-gradient mb-1">Session Debrief</h1>
+          <p className="text-muted-foreground text-sm">Duration: {duration} · Goal: {session?.goal_type || '—'}</p>
+        </div>
+        {sessionId && (
+          <Button variant="outline" size="sm" className="border-primary/30" onClick={() => setMappingOpen(true)}>
+            <MapPin className="h-3.5 w-3.5 mr-1" /> {session?.subject_id ? 'Edit Mapping' : 'Map Subject'}
+          </Button>
+        )}
       </div>
+
+      {sessionId && (
+        <SessionMappingModal
+          sessionId={sessionId}
+          currentSubjectId={session?.subject_id}
+          currentChapterId={session?.chapter_id}
+          currentTopicId={session?.primary_topic_id}
+          open={mappingOpen}
+          onOpenChange={setMappingOpen}
+          onSaved={() => { if (sessionId) getSession(sessionId).then(setSession); }}
+        />
+      )}
 
       {/* Topic Tags */}
       <Card className="shadow-card border-border gradient-card">

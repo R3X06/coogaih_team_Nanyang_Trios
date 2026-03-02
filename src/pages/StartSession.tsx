@@ -39,6 +39,13 @@ export default function StartSession() {
 
   useEffect(() => {
     getSubjects().then(setSubjects).catch(console.error);
+    // Check for preselection from Topic Detail Drawer
+    const preSub = sessionStorage.getItem('preselect_subject');
+    const preCh = sessionStorage.getItem('preselect_chapter');
+    const preTopic = sessionStorage.getItem('preselect_topic');
+    if (preSub) { setSelectedSubject(preSub); sessionStorage.removeItem('preselect_subject'); }
+    if (preCh) { setSelectedChapter(preCh); sessionStorage.removeItem('preselect_chapter'); }
+    if (preTopic) { setSelectedTopic(preTopic); sessionStorage.removeItem('preselect_topic'); }
   }, []);
 
   useEffect(() => {
@@ -261,15 +268,9 @@ export default function StartSession() {
           </div>
           <div className="flex flex-col items-center gap-3">
             {!sessionId ? (
-              subjects.length === 0 ? (
-                <p className="text-muted-foreground text-sm">Create a subject to start tracking.</p>
-              ) : !selectedSubject ? (
-                <p className="text-muted-foreground text-sm">Select a subject above to start.</p>
-              ) : (
                 <Button onClick={handleStart} className="gradient-primary text-primary-foreground font-semibold shadow-glow px-8">
                   <Play className="h-4 w-4 mr-2" /> Start
                 </Button>
-              )
             ) : (
               <>
                 <Button onClick={handlePause} variant="secondary" size="lg">
