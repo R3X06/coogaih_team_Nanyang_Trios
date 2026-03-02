@@ -1,5 +1,6 @@
 import { Link, useLocation } from 'react-router-dom';
-import { LayoutDashboard, Play, ClipboardList, History, Brain } from 'lucide-react';
+import { LayoutDashboard, Play, History } from 'lucide-react';
+import OwlLogo from '@/components/OwlLogo';
 
 const navItems = [
   { to: '/', label: 'Dashboard', icon: LayoutDashboard },
@@ -16,7 +17,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
       <header className="border-b border-border gradient-hero">
         <div className="container flex items-center justify-between h-16">
           <Link to="/" className="flex items-center gap-3">
-            <Brain className="h-7 w-7 text-primary" />
+            <OwlLogo className="h-8 w-8" />
             <span className="font-display text-2xl text-primary tracking-wide">coogaih</span>
           </Link>
           <nav className="flex items-center gap-1">

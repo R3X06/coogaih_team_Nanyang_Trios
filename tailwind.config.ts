@@ -14,7 +14,7 @@ export default {
     },
     extend: {
       fontFamily: {
-        display: ["Sreda", "serif"],
+        display: ["Nunito", "sans-serif"],
         body: ["Inter", "system-ui", "sans-serif"],
       },
       colors: {
