@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useUser } from '@/contexts/UserContext';
 import { getLatestSnapshotPerTopic, getLatestRecommendation, getSessions, callAdviceGenerate, createRecommendation } from '@/services/api';
+import { supabase } from '@/integrations/supabase/client';
 import type { Tables } from '@/integrations/supabase/types';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -15,6 +16,7 @@ export default function Dashboard() {
   const [snapshots, setSnapshots] = useState<Tables<'state_snapshots'>[]>([]);
   const [recommendation, setRecommendation] = useState<Tables<'recommendations'> | null>(null);
   const [sessions, setSessions] = useState<Tables<'sessions'>[]>([]);
+  const [appConfig, setAppConfig] = useState<any>(null);
   const [evidenceOpen, setEvidenceOpen] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -23,14 +25,16 @@ export default function Dashboard() {
     if (!user) return;
     setLoading(true);
     try {
-      const [snaps, rec, sess] = await Promise.all([
+      const [snaps, rec, sess, configRes] = await Promise.all([
         getLatestSnapshotPerTopic(user.id),
         getLatestRecommendation(user.id),
         getSessions(user.id),
+        supabase.from('app_config').select('value').eq('key', 'app_config').single(),
       ]);
       setSnapshots(snaps);
       setRecommendation(rec);
       setSessions(sess);
+      if (configRes.data?.value) setAppConfig(configRes.data.value);
     } catch (e) { console.error(e); }
     setLoading(false);
   };
@@ -177,19 +181,35 @@ export default function Dashboard() {
                     <p className="text-xs text-muted-foreground mt-0.5">{a.reason}</p>
                   </div>
                 ))}
-                {evidence && (
+                {(evidence || appConfig) && (
                   <div>
                     <button
                       onClick={() => setEvidenceOpen(!evidenceOpen)}
                       className="flex items-center gap-1 text-xs text-primary hover:underline"
                     >
                       {evidenceOpen ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
-                      Evidence
+                      Evidence &amp; Config
                     </button>
                     {evidenceOpen && (
-                      <pre className="mt-2 p-3 rounded bg-muted/50 text-xs text-muted-foreground overflow-auto max-h-32">
-                        {JSON.stringify(evidence, null, 2)}
-                      </pre>
+                      <div className="mt-2 space-y-2">
+                        {evidence && (
+                          <div>
+                            <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-1">Evidence</p>
+                            <pre className="p-2 rounded bg-muted/50 text-xs text-muted-foreground overflow-auto max-h-24">
+                              {JSON.stringify(evidence, null, 2)}
+                            </pre>
+                          </div>
+                        )}
+                        {appConfig && (
+                          <div>
+                            <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-1">Active Config</p>
+                            <div className="p-2 rounded bg-muted/50 text-xs text-muted-foreground space-y-1">
+                              <p><span className="text-primary">Thresholds:</span> High Risk ≥ {appConfig.thresholds?.high_risk}, Low Certainty ≤ {appConfig.thresholds?.low_certainty}</p>
+                              <p><span className="text-primary">Risk Weights:</span> {Object.entries(appConfig.risk_weights || {}).map(([k, v]) => `${k}: ${v}`).join(', ')}</p>
+                            </div>
+                          </div>
+                        )}
+                      </div>
                     )}
                   </div>
                 )}

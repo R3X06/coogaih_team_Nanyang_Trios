@@ -10,6 +10,7 @@ import StartSession from "@/pages/StartSession";
 import SessionDebrief from "@/pages/SessionDebrief";
 import MicroCheck from "@/pages/MicroCheck";
 import SessionHistory from "@/pages/SessionHistory";
+import ConfigPage from "@/pages/ConfigPage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -29,6 +30,7 @@ const App = () => (
               <Route path="/session/quiz/:sessionId" element={<MicroCheck />} />
               <Route path="/history" element={<SessionHistory />} />
               <Route path="/history/:sessionId" element={<SessionHistory />} />
+              <Route path="/config" element={<ConfigPage />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
           </AppLayout>

@@ -1,11 +1,12 @@
 import { Link, useLocation } from 'react-router-dom';
-import { LayoutDashboard, Play, History } from 'lucide-react';
+import { LayoutDashboard, Play, History, Settings } from 'lucide-react';
 import OwlLogo from '@/components/OwlLogo';
 
 const navItems = [
   { to: '/', label: 'Dashboard', icon: LayoutDashboard },
   { to: '/session/start', label: 'Study', icon: Play },
   { to: '/history', label: 'History', icon: History },
+  { to: '/config', label: 'Config', icon: Settings },
 ];
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
