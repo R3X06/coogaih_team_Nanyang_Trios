@@ -259,11 +259,17 @@ export default function StartSession() {
           <div className={`text-7xl font-mono font-bold tracking-wider mb-6 ${running ? 'text-gradient animate-pulse-glow' : 'text-foreground'}`}>
             {formatTime(elapsed)}
           </div>
-          <div className="flex justify-center gap-3">
+          <div className="flex flex-col items-center gap-3">
             {!sessionId ? (
-              <Button onClick={handleStart} className="gradient-primary text-primary-foreground font-semibold shadow-glow px-8">
-                <Play className="h-4 w-4 mr-2" /> Start
-              </Button>
+              subjects.length === 0 ? (
+                <p className="text-muted-foreground text-sm">Create a subject to start tracking.</p>
+              ) : !selectedSubject ? (
+                <p className="text-muted-foreground text-sm">Select a subject above to start.</p>
+              ) : (
+                <Button onClick={handleStart} className="gradient-primary text-primary-foreground font-semibold shadow-glow px-8">
+                  <Play className="h-4 w-4 mr-2" /> Start
+                </Button>
+              )
             ) : (
               <>
                 <Button onClick={handlePause} variant="secondary" size="lg">
