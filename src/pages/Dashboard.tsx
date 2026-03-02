@@ -147,11 +147,6 @@ export default function Dashboard() {
           <Button onClick={handleRunDebrief} variant="outline" disabled={refreshing} className="border-primary/30">
             <RefreshCw className={`h-4 w-4 mr-2 ${refreshing ? 'animate-spin' : ''}`} /> Run AI Debrief
           </Button>
-          <Link to="/session/start">
-            <Button className="gradient-primary text-primary-foreground font-semibold shadow-glow">
-              <Play className="h-4 w-4 mr-2" /> Start Session
-            </Button>
-          </Link>
         </div>
       </div>
 

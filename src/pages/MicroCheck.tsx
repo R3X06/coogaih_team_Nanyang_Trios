@@ -233,7 +233,7 @@ export default function MicroCheck() {
               <p className="text-sm text-muted-foreground">Learning state + recommendations updated</p>
             </CardContent>
           </Card>
-          <Button onClick={() => navigate('/')} className="w-full" variant="outline" size="lg">
+          <Button onClick={() => navigate('/dashboard')} className="w-full" variant="outline" size="lg">
             Back to Dashboard <ArrowRight className="h-4 w-4 ml-2" />
           </Button>
         </div>
