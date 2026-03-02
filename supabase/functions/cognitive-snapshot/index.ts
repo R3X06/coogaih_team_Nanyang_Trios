@@ -38,17 +38,22 @@ Rules:
 - Do NOT output markdown.
 `;
 
-async function callLovableAI(inputMetrics: any) {
-  const apiKey = Deno.env.get("LOVABLE_API_KEY")!;
+async function callAzureOpenAI(inputMetrics: any) {
+  const endpoint = Deno.env.get("AZURE_OPENAI_ENDPOINT")!;
+  const deployment = Deno.env.get("AZURE_OPENAI_DEPLOYMENT")!;
+  const apiKey = Deno.env.get("AZURE_OPENAI_KEY")!;
+  const apiVersion = Deno.env.get("AZURE_OPENAI_API_VERSION") || "2024-02-15-preview";
 
-  const res = await fetch("https://api.lovable.dev/v1/chat/completions", {
+  const url =
+    `${endpoint.replace(/\/$/, "")}/openai/deployments/${deployment}/chat/completions?api-version=${apiVersion}`;
+
+  const res = await fetch(url, {
     method: "POST",
     headers: {
-      "Authorization": `Bearer ${apiKey}`,
-      "Content-Type": "application/json",
+      "api-key": apiKey,
+      "content-type": "application/json",
     },
     body: JSON.stringify({
-      model: "google/gemini-2.5-flash",
       messages: [
         { role: "system", content: SYSTEM_PROMPT },
         { role: "user", content: JSON.stringify(inputMetrics) },
@@ -61,7 +66,7 @@ async function callLovableAI(inputMetrics: any) {
 
   if (!res.ok) {
     const err = await res.text();
-    throw new Error(`Lovable AI error: ${res.status} ${err}`);
+    throw new Error(`Azure OpenAI error: ${res.status} ${err}`);
   }
 
   const data = await res.json();
@@ -75,6 +80,7 @@ Deno.serve(async (req) => {
   }
 
   try {
+    // IMPORTANT: Use caller JWT (RLS safe). Do NOT use service role.
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const anonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
     const authHeader = req.headers.get("Authorization") ?? "";
@@ -83,16 +89,15 @@ Deno.serve(async (req) => {
       global: { headers: { Authorization: authHeader } },
     });
 
-    const token = authHeader.replace("Bearer ", "");
-    const { data: claimsData, error: claimsErr } = await supabase.auth.getClaims(token);
-    if (claimsErr || !claimsData?.claims) {
+    const { data: userData, error: userErr } = await supabase.auth.getUser();
+    if (userErr || !userData?.user) {
       return new Response(JSON.stringify({ error: "Unauthorized" }), {
         status: 401,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    const user_id = claimsData.claims.sub;
+    const user_id = userData.user.id;
 
     // Gather metrics in parallel
     const [sessionsRes, snapshotsRes, recsRes, logsRes] = await Promise.all([
@@ -149,8 +154,9 @@ Deno.serve(async (req) => {
         : null,
     };
 
-    const summary = await callLovableAI(inputMetrics);
+    const summary = await callAzureOpenAI(inputMetrics);
 
+    // Return in the shape your UI expects: { snapshot: ... }
     return new Response(JSON.stringify({ snapshot: summary }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
