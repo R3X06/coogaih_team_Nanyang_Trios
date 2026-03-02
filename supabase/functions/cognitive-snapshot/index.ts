@@ -8,16 +8,21 @@ const corsHeaders = {
   "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
 
-const SYSTEM_PROMPT = `You are the Cognitive Snapshot Engine for Coogaih.
+const SYSTEM_PROMPT = `
+You are the Cognitive Snapshot Engine for Coogaih.
 
-You must output STRICT JSON only (no markdown), following this schema:
+You must output STRICT JSON only with this exact schema:
 
 {
   "confidence_level": "low|medium|high",
   "overall_state": "string",
   "learner_profile": "Stable Improver|High Volatility Performer|Calibration Mismatch|Fatigue Sensitive|Fragmented Attention|Plateaued|Insufficient Data",
   "pattern_signals": [
-    { "signal": "string", "evidence": "string", "severity": "low|medium|high" }
+    {
+      "signal": "string",
+      "evidence": "string",
+      "severity": "low|medium|high"
+    }
   ],
   "risk_factors": ["string"],
   "stability_assessment": "string",
@@ -26,9 +31,12 @@ You must output STRICT JSON only (no markdown), following this schema:
 }
 
 Rules:
-- Use ONLY the provided structured metrics. No speculation.
-- Be concise, analytical, precise. No motivational tone.
-- If fewer than 2 total study entries (sessions + manual logs), set confidence_level="low" and learner_profile="Insufficient Data".`;
+- Use ONLY provided structured metrics.
+- No speculation.
+- Be analytical and concise.
+- If insufficient data, set confidence_level="low" and learner_profile="Insufficient Data".
+- Do NOT output markdown.
+`;
 
 async function callAzureOpenAI(inputMetrics: any) {
   const endpoint = Deno.env.get("AZURE_OPENAI_ENDPOINT")!;
