@@ -1,13 +1,13 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useUser } from '@/contexts/UserContext';
-import { getLatestSnapshotPerTopic, getLatestSnapshots, getLatestRecommendation, getSessions, callAdviceGenerate, createRecommendation, getSubjects, getTopicsBySubject } from '@/services/api';
+import { getLatestSnapshotPerTopic, getLatestSnapshots, getLatestRecommendation, getSessions, getManualLogs, callAdviceGenerate, createRecommendation, getSubjects, getTopicsBySubject } from '@/services/api';
 import { supabase } from '@/integrations/supabase/client';
 import type { Tables } from '@/integrations/supabase/types';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Play, AlertTriangle, Lightbulb, RefreshCw, ChevronDown, ChevronUp, Crosshair } from 'lucide-react';
+import { Play, AlertTriangle, Lightbulb, RefreshCw, ChevronDown, ChevronUp, Crosshair, PenLine, BookOpen, Plus } from 'lucide-react';
 import TrajectoryMap from '@/components/TrajectoryMap';
 import SkillRadar from '@/components/SkillRadar';
 import RiskMonitor from '@/components/RiskMonitor';
@@ -19,6 +19,7 @@ export default function Dashboard() {
   const [allSnapshots, setAllSnapshots] = useState<Tables<'state_snapshots'>[]>([]);
   const [recommendation, setRecommendation] = useState<Tables<'recommendations'> | null>(null);
   const [sessions, setSessions] = useState<Tables<'sessions'>[]>([]);
+  const [manualLogs, setManualLogs] = useState<any[]>([]);
   const [appConfig, setAppConfig] = useState<any>(null);
   const [evidenceOpen, setEvidenceOpen] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
@@ -31,19 +32,21 @@ export default function Dashboard() {
     if (!user) return;
     setLoading(true);
     try {
-      const [snaps, allSnaps, rec, sess, configRes, subjs] = await Promise.all([
+      const [snaps, allSnaps, rec, sess, configRes, subjs, logs] = await Promise.all([
         getLatestSnapshotPerTopic(user.id),
         getLatestSnapshots(user.id),
         getLatestRecommendation(user.id),
         getSessions(user.id),
         supabase.from('app_config').select('value').eq('key', 'app_config').single(),
         getSubjects(),
+        getManualLogs(user.id),
       ]);
       setSnapshots(snaps);
       setAllSnapshots(allSnaps);
       setRecommendation(rec);
       setSessions(sess);
       setSubjects(subjs);
+      setManualLogs(logs);
       if (configRes.data?.value) setAppConfig(configRes.data.value);
     } catch (e) { console.error(e); }
     setLoading(false);
@@ -153,7 +156,50 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* Hero: Trajectory Map */}
+      {/* Quick Actions */}
+      <div className="flex gap-3">
+        <Link to="/session/start" className="flex-1">
+          <Card className="shadow-card border-border gradient-card hover:border-primary/30 transition-colors cursor-pointer">
+            <CardContent className="py-4 flex items-center gap-3">
+              <Play className="h-5 w-5 text-primary" />
+              <div><p className="text-sm font-semibold text-foreground">Start Session</p><p className="text-[10px] text-muted-foreground">Timer-based study</p></div>
+            </CardContent>
+          </Card>
+        </Link>
+        <Link to="/log/manual" className="flex-1">
+          <Card className="shadow-card border-border gradient-card hover:border-primary/30 transition-colors cursor-pointer">
+            <CardContent className="py-4 flex items-center gap-3">
+              <PenLine className="h-5 w-5 text-primary" />
+              <div><p className="text-sm font-semibold text-foreground">Manual Log</p><p className="text-[10px] text-muted-foreground">Log without timer</p></div>
+            </CardContent>
+          </Card>
+        </Link>
+        <Link to="/manage/subjects" className="flex-1">
+          <Card className="shadow-card border-border gradient-card hover:border-primary/30 transition-colors cursor-pointer">
+            <CardContent className="py-4 flex items-center gap-3">
+              <BookOpen className="h-5 w-5 text-primary" />
+              <div><p className="text-sm font-semibold text-foreground">Subjects</p><p className="text-[10px] text-muted-foreground">Manage hierarchy</p></div>
+            </CardContent>
+          </Card>
+        </Link>
+      </div>
+
+      {/* Empty state CTA */}
+      {subjects.length === 0 && sessions.length === 0 && (
+        <Card className="shadow-card border-primary/20 gradient-accent">
+          <CardContent className="py-8 text-center">
+            <Plus className="h-8 w-8 text-primary mx-auto mb-3" />
+            <p className="text-foreground font-semibold mb-1">Create your first subject to begin tracking.</p>
+            <p className="text-muted-foreground text-sm mb-4">Subjects organize your learning into chapters and topics.</p>
+            <Link to="/manage/subjects">
+              <Button className="gradient-primary text-primary-foreground font-semibold shadow-glow">
+                <Plus className="h-4 w-4 mr-2" /> Add Subject
+              </Button>
+            </Link>
+          </CardContent>
+        </Card>
+      )}
+
       <Card className="shadow-card border-border gradient-card overflow-hidden">
         <CardHeader>
           <CardTitle className="font-display text-lg text-gradient flex items-center gap-2">
@@ -279,6 +325,36 @@ export default function Dashboard() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Recent Activity */}
+      {(sessions.length > 0 || manualLogs.length > 0) && (
+        <Card className="shadow-card border-border gradient-card">
+          <CardHeader>
+            <CardTitle className="font-display text-lg text-gradient">Recent Activity</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-2">
+            {[
+              ...sessions.slice(0, 5).map(s => ({ type: 'session' as const, date: s.start_time, goal: s.goal_type, duration: s.duration_sec, id: s.id })),
+              ...manualLogs.slice(0, 5).map((l: any) => ({ type: 'log' as const, date: l.created_at, goal: l.activity_type, duration: l.duration_sec, id: l.id })),
+            ]
+              .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+              .slice(0, 5)
+              .map(item => (
+                <div key={item.id} className="flex items-center justify-between py-2 px-3 rounded bg-accent/20 text-sm">
+                  <div className="flex items-center gap-2">
+                    {item.type === 'session' ? <Play className="h-3 w-3 text-primary" /> : <PenLine className="h-3 w-3 text-primary" />}
+                    <span className="text-foreground capitalize">{item.goal}</span>
+                    <span className="text-[10px] text-muted-foreground">{item.type === 'session' ? 'Timer' : 'Manual'}</span>
+                  </div>
+                  <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                    <span>{item.duration ? `${Math.floor(item.duration / 60)}m` : '—'}</span>
+                    <span>{new Date(item.date).toLocaleDateString()}</span>
+                  </div>
+                </div>
+              ))}
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 }

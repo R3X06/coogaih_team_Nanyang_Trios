@@ -304,6 +304,17 @@ export async function getSubjects() {
   return data || [];
 }
 
+export async function createSubject(insert: { name: string; description?: string; color_accent?: string; user_id?: string }) {
+  const { data, error } = await supabase.from('subjects').insert(insert as any).select().single();
+  if (error) throw error;
+  return data!;
+}
+
+export async function deleteSubject(id: string) {
+  const { error } = await supabase.from('subjects').delete().eq('id', id);
+  if (error) throw error;
+}
+
 export async function getSubject(id: string) {
   const { data, error } = await supabase.from('subjects').select('*').eq('id', id).single();
   if (error) throw error;
@@ -316,10 +327,32 @@ export async function getChaptersBySubject(subjectId: string) {
   return data || [];
 }
 
+export async function createChapter(insert: { subject_id: string; name: string; order_index?: number; user_id?: string }) {
+  const { data, error } = await supabase.from('chapters').insert(insert as any).select().single();
+  if (error) throw error;
+  return data!;
+}
+
+export async function deleteChapter(id: string) {
+  const { error } = await supabase.from('chapters').delete().eq('id', id);
+  if (error) throw error;
+}
+
 export async function getTopicsByChapter(chapterId: string) {
   const { data, error } = await supabase.from('topics').select('*').eq('chapter_id', chapterId).order('order_index');
   if (error) throw error;
   return data || [];
+}
+
+export async function createTopic(insert: { chapter_id: string; name: string; order_index?: number; user_id?: string }) {
+  const { data, error } = await supabase.from('topics').insert(insert as any).select().single();
+  if (error) throw error;
+  return data!;
+}
+
+export async function deleteTopic(id: string) {
+  const { error } = await supabase.from('topics').delete().eq('id', id);
+  if (error) throw error;
 }
 
 export async function getTopicsBySubject(subjectId: string) {
@@ -333,6 +366,27 @@ export async function getTopicsBySubject(subjectId: string) {
 
 export async function getSessionsBySubject(userId: string, subjectId: string) {
   const { data, error } = await supabase.from('sessions').select('*').eq('user_id', userId).eq('subject_id', subjectId).order('start_time', { ascending: false });
+  if (error) throw error;
+  return data || [];
+}
+
+// ============================================================
+// Manual Logs
+// ============================================================
+export async function createManualLog(insert: any) {
+  const { data, error } = await supabase.from('manual_logs').insert(insert).select().single();
+  if (error) throw error;
+  return data!;
+}
+
+export async function getManualLogs(userId: string) {
+  const { data, error } = await supabase.from('manual_logs').select('*').eq('user_id', userId).order('created_at', { ascending: false });
+  if (error) throw error;
+  return data || [];
+}
+
+export async function getManualLogsBySubject(userId: string, subjectId: string) {
+  const { data, error } = await supabase.from('manual_logs').select('*').eq('user_id', userId).eq('subject_id', subjectId).order('created_at', { ascending: false });
   if (error) throw error;
   return data || [];
 }

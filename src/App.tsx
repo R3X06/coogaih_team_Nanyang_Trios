@@ -12,6 +12,8 @@ import MicroCheck from "@/pages/MicroCheck";
 import SessionHistory from "@/pages/SessionHistory";
 import ConfigPage from "@/pages/ConfigPage";
 import SubjectDetail from "@/pages/SubjectDetail";
+import ManageSubjects from "@/pages/ManageSubjects";
+import ManualLog from "@/pages/ManualLog";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -33,6 +35,8 @@ const App = () => (
               <Route path="/history/:sessionId" element={<SessionHistory />} />
               <Route path="/config" element={<ConfigPage />} />
               <Route path="/subject/:subjectId" element={<SubjectDetail />} />
+              <Route path="/manage/subjects" element={<ManageSubjects />} />
+              <Route path="/log/manual" element={<ManualLog />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
           </AppLayout>
