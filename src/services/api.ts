@@ -203,6 +203,28 @@ export async function callAdviceValidate(input: AdviceValidateInput): Promise<an
   if (error) throw error;
   return data;
 }
+// ============================================================
+// 7) POST /insight/snapshot (Cognitive Snapshot)
+// ============================================================
+export interface InsightSnapshotInput {
+  profile: any;
+  subject_aggregates: any;
+  recent_states: any[];
+  recent_sessions: any[];
+}
+
+export interface InsightSnapshotOutput {
+  snapshot_summary: string;
+  top_pattern_detected: string;
+  emerging_risk: string | null;
+  confidence: number;
+}
+
+export async function callInsightSnapshot(input: InsightSnapshotInput): Promise<InsightSnapshotOutput> {
+  const { data, error } = await supabase.functions.invoke('insight-snapshot', { body: input });
+  if (error) throw error;
+  return data as InsightSnapshotOutput;
+}
 
 // ============================================================
 // Supabase DB operations (unchanged)
