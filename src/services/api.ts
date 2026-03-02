@@ -184,7 +184,9 @@ export interface AdviceGenerateOutput {
 }
 
 export async function callAdviceGenerate(input: AdviceGenerateInput): Promise<AdviceGenerateOutput> {
-  return apiFetch('/advice/generate', input);
+  const { data, error } = await supabase.functions.invoke('advice-generate', { body: input });
+  if (error) throw error;
+  return data as AdviceGenerateOutput;
 }
 
 // ============================================================
