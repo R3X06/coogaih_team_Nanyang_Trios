@@ -81,7 +81,7 @@ export default function MicroCheck() {
   return (
     <div className="max-w-2xl mx-auto space-y-6 animate-fade-in">
       <div>
-        <h1 className="font-display text-3xl text-primary mb-1">Micro-Check</h1>
+        <h1 className="font-display text-3xl text-gradient mb-1">Micro-Check</h1>
         <p className="text-muted-foreground text-sm">
           {submitted ? `Score: ${score}%` : `${quiz.questions.length} questions · Rate your confidence`}
         </p>

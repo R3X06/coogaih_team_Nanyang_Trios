@@ -104,7 +104,7 @@ export default function StartSession() {
   return (
     <div className="max-w-2xl mx-auto space-y-6 animate-fade-in">
       <div>
-        <h1 className="font-display text-3xl text-primary mb-1">Study Session</h1>
+        <h1 className="font-display text-3xl text-gradient mb-1">Study Session</h1>
         <p className="text-muted-foreground text-sm">Focus. Learn. Grow.</p>
       </div>
 

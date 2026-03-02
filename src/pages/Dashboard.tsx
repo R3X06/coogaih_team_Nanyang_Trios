@@ -16,7 +16,7 @@ export default function Dashboard() {
       {/* Hero */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
-          <h1 className="font-display text-3xl text-primary mb-1">Dashboard</h1>
+          <h1 className="font-display text-3xl text-gradient mb-1">Dashboard</h1>
           <p className="text-muted-foreground text-sm">
             {completedSessions.length} sessions completed · Last updated {new Date(learningState.lastUpdated).toLocaleDateString()}
           </p>
@@ -55,7 +55,7 @@ export default function Dashboard() {
         {/* Radar */}
         <Card className="shadow-card border-border">
           <CardHeader>
-            <CardTitle className="font-display text-xl text-primary">Skill Space</CardTitle>
+            <CardTitle className="font-display text-xl text-gradient">Skill Space</CardTitle>
           </CardHeader>
           <CardContent>
             <RadarChart skills={learningState.skills} />
@@ -65,7 +65,7 @@ export default function Dashboard() {
         {/* Recommendations */}
         <Card className="shadow-card border-border">
           <CardHeader>
-            <CardTitle className="font-display text-xl text-primary flex items-center gap-2">
+            <CardTitle className="font-display text-xl text-gradient flex items-center gap-2">
               <Lightbulb className="h-5 w-5" /> Next Best Actions
             </CardTitle>
           </CardHeader>
@@ -94,7 +94,7 @@ export default function Dashboard() {
       {/* Skill bars */}
       <Card className="shadow-card border-border">
         <CardHeader>
-          <CardTitle className="font-display text-xl text-primary">Mastery Breakdown</CardTitle>
+          <CardTitle className="font-display text-xl text-gradient">Mastery Breakdown</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           {learningState.skills.map(skill => (
@@ -119,7 +119,7 @@ export default function Dashboard() {
       {completedSessions.length > 0 && (
         <Card className="shadow-card border-border">
           <CardHeader className="flex flex-row items-center justify-between">
-            <CardTitle className="font-display text-xl text-primary">Recent Sessions</CardTitle>
+            <CardTitle className="font-display text-xl text-gradient">Recent Sessions</CardTitle>
             <Link to="/history" className="text-sm text-primary hover:underline flex items-center gap-1">
               View all <ArrowRight className="h-3 w-3" />
             </Link>
