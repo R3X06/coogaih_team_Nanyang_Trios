@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useUser } from '@/contexts/UserContext';
-import { createSession, updateSession } from '@/services/api';
+import { createSession, updateSession, callAttentionAnalyze } from '@/services/api';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
@@ -98,6 +98,26 @@ export default function StartSession() {
         switching_rate: switchingRate,
         switches_count: switchesCount,
       });
+
+      // Call attention analysis endpoint
+      try {
+        const analysis = await callAttentionAnalyze({
+          session_goal: goalType,
+          attention_vector: {
+            research_ratio: researchRatio,
+            practice_ratio: practiceRatio,
+            notes_ratio: notesRatio,
+            distraction_ratio: distractionRatio,
+            fragmentation,
+            avg_focus_block_minutes: avgFocusBlockMin,
+            switching_rate: switchingRate,
+            switches_count: switchesCount,
+          },
+        });
+        // Store analysis in sessionStorage for debrief page to display
+        sessionStorage.setItem(`attention_analysis_${sessionId}`, JSON.stringify(analysis));
+      } catch (e) { console.warn('Attention analysis failed (non-blocking):', e); }
+
       navigate(`/session/debrief/${sessionId}`);
     } catch (e) { console.error(e); }
   };
