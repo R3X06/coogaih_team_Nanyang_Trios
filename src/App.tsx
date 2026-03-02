@@ -37,7 +37,6 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
     return <Navigate to="/login" replace />;
   }
 
-  // If profile exists but onboarding not completed, redirect to onboarding
   if (profile && !profile.onboarding_completed) {
     return <Navigate to="/onboarding" replace />;
   }
@@ -57,13 +56,13 @@ function OnboardingRoute() {
   }
 
   if (!isAuthenticated) return <Navigate to="/login" replace />;
-  if (profile?.onboarding_completed) return <Navigate to="/" replace />;
+  if (profile?.onboarding_completed) return <Navigate to="/dashboard" replace />;
 
   return <Onboarding />;
 }
 
 function LoginRoute() {
-  const { isAuthenticated, loading } = useUser();
+  const { isAuthenticated, loading, profile } = useUser();
 
   if (loading) {
     return (
@@ -73,17 +72,25 @@ function LoginRoute() {
     );
   }
 
-  if (isAuthenticated) return <Navigate to="/" replace />;
+  if (isAuthenticated) {
+    if (profile && !profile.onboarding_completed) {
+      return <Navigate to="/onboarding" replace />;
+    }
+    return <Navigate to="/dashboard" replace />;
+  }
 
   return <Login />;
 }
 
 const AppRoutes = () => (
   <Routes>
-    <Route path="/home" element={<Index />} />
+    {/* Public routes — no AppLayout */}
+    <Route path="/" element={<Index />} />
     <Route path="/login" element={<LoginRoute />} />
     <Route path="/onboarding" element={<OnboardingRoute />} />
-    <Route path="/" element={<ProtectedRoute><AppLayout><Dashboard /></AppLayout></ProtectedRoute>} />
+
+    {/* Protected routes — wrapped in AppLayout */}
+    <Route path="/dashboard" element={<ProtectedRoute><AppLayout><Dashboard /></AppLayout></ProtectedRoute>} />
     <Route path="/session/start" element={<ProtectedRoute><AppLayout><StartSession /></AppLayout></ProtectedRoute>} />
     <Route path="/session/debrief/:sessionId" element={<ProtectedRoute><AppLayout><SessionDebrief /></AppLayout></ProtectedRoute>} />
     <Route path="/session/quiz/:sessionId" element={<ProtectedRoute><AppLayout><MicroCheck /></AppLayout></ProtectedRoute>} />

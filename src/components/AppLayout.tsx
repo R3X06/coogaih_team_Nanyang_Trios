@@ -6,7 +6,7 @@ import SubjectsSidebar from '@/components/SubjectsSidebar';
 import { Button } from '@/components/ui/button';
 
 const navItems = [
-  { to: '/', label: 'Dashboard', icon: LayoutDashboard },
+  { to: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { to: '/session/start', label: 'Study', icon: Play },
   { to: '/history', label: 'History', icon: History },
   { to: '/profile', label: 'Profile', icon: User },
@@ -28,14 +28,14 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
       {/* Header */}
       <header className="border-b border-border glass">
         <div className="container flex items-center justify-between h-14">
-          <Link to="/home" className="flex items-center gap-3">
+          <div className="flex items-center gap-3">
             <OwlLogo className="h-7 w-7" />
-            <span className="font-display text-xl text-gradient tracking-wide drop-shadow-[0_0_12px_hsl(var(--primary)/0.5)] transition-all duration-300 hover:drop-shadow-[0_0_20px_hsl(var(--primary)/0.85)]">coogaih</span>
-          </Link>
+            <span className="font-display text-xl text-gradient tracking-wide drop-shadow-[0_0_12px_hsl(var(--primary)/0.5)]">coogaih</span>
+          </div>
           <div className="flex items-center gap-1">
             <nav className="flex items-center gap-0.5">
               {navItems.map(item => {
-                const active = pathname === item.to || (item.to !== '/' && pathname.startsWith(item.to));
+                const active = pathname === item.to || (item.to !== '/dashboard' && pathname.startsWith(item.to));
                 return (
                   <Link
                     key={item.to}
