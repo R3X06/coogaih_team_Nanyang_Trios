@@ -24,7 +24,7 @@ export default function ManageSubjects() {
   // Add forms
   const [newSubjectName, setNewSubjectName] = useState('');
   const [newSubjectDesc, setNewSubjectDesc] = useState('');
-  const [newSubjectColor, setNewSubjectColor] = useState('#f97316');
+  const [newSubjectColor, setNewSubjectColor] = useState('#2dd4bf');
   const [newChapterName, setNewChapterName] = useState('');
   const [newTopicName, setNewTopicName] = useState('');
   const [addSubjectOpen, setAddSubjectOpen] = useState(false);
@@ -33,7 +33,7 @@ export default function ManageSubjects() {
   const [editSubjectId, setEditSubjectId] = useState<string | null>(null);
   const [editSubjectName, setEditSubjectName] = useState('');
   const [editSubjectDesc, setEditSubjectDesc] = useState('');
-  const [editSubjectColor, setEditSubjectColor] = useState('#f97316');
+  const [editSubjectColor, setEditSubjectColor] = useState('#2dd4bf');
 
   const notifySidebarRefresh = () => window.dispatchEvent(new Event('subjects-updated'));
 
@@ -57,7 +57,7 @@ export default function ManageSubjects() {
   const handleAddSubject = async () => {
     if (!newSubjectName.trim() || !user) return;
     const subj = await createSubject({ name: newSubjectName.trim(), description: newSubjectDesc.trim(), color_accent: newSubjectColor, user_id: user.id });
-    setNewSubjectName(''); setNewSubjectDesc(''); setNewSubjectColor('#f97316');
+    setNewSubjectName(''); setNewSubjectDesc(''); setNewSubjectColor('#2dd4bf');
     setAddSubjectOpen(false);
     await loadSubjects();
     notifySidebarRefresh();
@@ -197,7 +197,7 @@ export default function ManageSubjects() {
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     {isExpanded ? <ChevronDown className="h-4 w-4 text-primary" /> : <ChevronRight className="h-4 w-4 text-muted-foreground" />}
-                    <span className="h-3 w-3 rounded-full" style={{ background: subject.color_accent || '#f97316' }} />
+                    <span className="h-3 w-3 rounded-full" style={{ background: subject.color_accent || '#2dd4bf' }} />
                     <CardTitle className="text-sm font-semibold">{subject.name}</CardTitle>
                   </div>
                   <div className="flex gap-1">
@@ -206,7 +206,7 @@ export default function ManageSubjects() {
                       setEditSubjectId(subject.id);
                       setEditSubjectName(subject.name);
                       setEditSubjectDesc(subject.description || '');
-                      setEditSubjectColor(subject.color_accent || '#f97316');
+                      setEditSubjectColor(subject.color_accent || '#2dd4bf');
                     }}>
                       <Pencil className="h-3.5 w-3.5" />
                     </Button>

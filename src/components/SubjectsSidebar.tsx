@@ -57,7 +57,7 @@ export default function SubjectsSidebar() {
           to={`/subject/${subject.id}`}
           className="flex items-center gap-2 px-3 py-2 rounded-md text-sm transition-all duration-150 glass-hover group hover:bg-[hsl(var(--glass-bg-hover))]"
         >
-          <span className="h-2.5 w-2.5 rounded-full shrink-0" style={{ background: subject.color_accent || 'hsl(25 95% 53%)' }} />
+          <span className="h-2.5 w-2.5 rounded-full shrink-0" style={{ background: subject.color_accent || 'hsl(160 70% 45%)' }} />
           <div className="flex-1 min-w-0">
             <span className="block truncate text-foreground">{subject.name}</span>
             <span className="text-[10px] text-muted-foreground">
