@@ -76,7 +76,7 @@ export default function Onboarding() {
       }
 
       await refreshProfile();
-      navigate('/');
+      navigate('/dashboard');
     } catch (e) {
       console.error(e);
     }
@@ -90,7 +90,7 @@ export default function Onboarding() {
       profile_completion: 0,
     } as any).eq('user_id', authUser.id);
     await refreshProfile();
-    navigate('/');
+    navigate('/dashboard');
   };
 
   return (

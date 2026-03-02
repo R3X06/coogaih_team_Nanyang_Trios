@@ -108,7 +108,7 @@ export default function ManualLog() {
           return;
         }
       }
-      navigate('/');
+      navigate('/dashboard');
     } catch (e) { console.error(e); }
     setSubmitting(false);
   };

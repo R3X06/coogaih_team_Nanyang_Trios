@@ -136,7 +136,7 @@ export default function SubjectDetail() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
-          <Link to="/" className="text-xs text-muted-foreground hover:text-primary mb-1 inline-block">← Dashboard</Link>
+          <Link to="/dashboard" className="text-xs text-muted-foreground hover:text-primary mb-1 inline-block">← Dashboard</Link>
           <h1 className="font-display text-3xl text-gradient">{subject.name}</h1>
           <p className="text-muted-foreground text-sm">{subject.description}</p>
         </div>
