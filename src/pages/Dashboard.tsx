@@ -1,11 +1,12 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useUser } from '@/contexts/UserContext';
-import { getLatestSnapshotPerTopic, getLatestSnapshots, getLatestRecommendation, getSessions, callAdviceGenerate, createRecommendation } from '@/services/api';
+import { getLatestSnapshotPerTopic, getLatestSnapshots, getLatestRecommendation, getSessions, callAdviceGenerate, createRecommendation, getSubjects, getTopicsBySubject } from '@/services/api';
 import { supabase } from '@/integrations/supabase/client';
 import type { Tables } from '@/integrations/supabase/types';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Play, AlertTriangle, Lightbulb, RefreshCw, ChevronDown, ChevronUp, Crosshair } from 'lucide-react';
 import TrajectoryMap from '@/components/TrajectoryMap';
 import SkillRadar from '@/components/SkillRadar';
@@ -22,28 +23,48 @@ export default function Dashboard() {
   const [evidenceOpen, setEvidenceOpen] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [subjects, setSubjects] = useState<Tables<'subjects'>[]>([]);
+  const [activeSubject, setActiveSubject] = useState<string>('all');
+  const [subjectTopicNames, setSubjectTopicNames] = useState<Set<string>>(new Set());
 
   const loadData = async () => {
     if (!user) return;
     setLoading(true);
     try {
-      const [snaps, allSnaps, rec, sess, configRes] = await Promise.all([
+      const [snaps, allSnaps, rec, sess, configRes, subjs] = await Promise.all([
         getLatestSnapshotPerTopic(user.id),
         getLatestSnapshots(user.id),
         getLatestRecommendation(user.id),
         getSessions(user.id),
         supabase.from('app_config').select('value').eq('key', 'app_config').single(),
+        getSubjects(),
       ]);
       setSnapshots(snaps);
       setAllSnapshots(allSnaps);
       setRecommendation(rec);
       setSessions(sess);
+      setSubjects(subjs);
       if (configRes.data?.value) setAppConfig(configRes.data.value);
     } catch (e) { console.error(e); }
     setLoading(false);
   };
 
   useEffect(() => { if (user) loadData(); }, [user]);
+
+  // When subject filter changes, load its topic names for filtering
+  useEffect(() => {
+    if (activeSubject === 'all') {
+      setSubjectTopicNames(new Set());
+    } else {
+      getTopicsBySubject(activeSubject).then(topics => {
+        setSubjectTopicNames(new Set(topics.flatMap(t => [t.id, t.name])));
+      }).catch(console.error);
+    }
+  }, [activeSubject]);
+
+  // Filtered data based on active subject
+  const filteredSnapshots = activeSubject === 'all' ? snapshots : snapshots.filter(s => subjectTopicNames.has(s.topic_tag));
+  const filteredAllSnapshots = activeSubject === 'all' ? allSnapshots : allSnapshots.filter(s => subjectTopicNames.has(s.topic_tag));
 
   const handleRunDebrief = async () => {
     if (!user) return;
@@ -101,9 +122,24 @@ export default function Dashboard() {
     <div className="space-y-8 animate-fade-in">
       {/* Header */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-        <div>
-          <h1 className="font-display text-3xl text-gradient mb-0">coogaih</h1>
-          <p className="text-muted-foreground text-sm">Cognitive Guidance AI</p>
+        <div className="flex items-center gap-4">
+          <div>
+            <h1 className="font-display text-3xl text-gradient mb-0">coogaih</h1>
+            <p className="text-muted-foreground text-sm">Cognitive Guidance AI</p>
+          </div>
+          {subjects.length > 0 && (
+            <Select value={activeSubject} onValueChange={setActiveSubject}>
+              <SelectTrigger className="w-44 bg-accent/30 h-9 text-xs">
+                <SelectValue placeholder="All subjects" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Subjects</SelectItem>
+                {subjects.map(s => (
+                  <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          )}
         </div>
         <div className="flex gap-2">
           <Button onClick={handleRunDebrief} variant="outline" disabled={refreshing} className="border-primary/30">
@@ -125,8 +161,8 @@ export default function Dashboard() {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          {allSnapshots.length > 0 ? (
-            <TrajectoryMap allSnapshots={allSnapshots} />
+          {filteredAllSnapshots.length > 0 ? (
+            <TrajectoryMap allSnapshots={filteredAllSnapshots} />
           ) : (
             <p className="text-muted-foreground text-sm text-center py-12">Complete a session to see your learning trajectory.</p>
           )}
@@ -140,8 +176,8 @@ export default function Dashboard() {
             <CardTitle className="font-display text-lg text-gradient">Skill Space</CardTitle>
           </CardHeader>
           <CardContent>
-            {snapshots.length > 0 ? (
-              <SkillRadar snapshots={snapshots} />
+            {filteredSnapshots.length > 0 ? (
+              <SkillRadar snapshots={filteredSnapshots} />
             ) : (
               <p className="text-muted-foreground text-sm text-center py-8">Complete a session to see skill data.</p>
             )}
@@ -155,7 +191,7 @@ export default function Dashboard() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <RiskMonitor snapshots={snapshots} recommendation={recommendation} />
+            <RiskMonitor snapshots={filteredSnapshots} recommendation={recommendation} />
           </CardContent>
         </Card>
       </div>

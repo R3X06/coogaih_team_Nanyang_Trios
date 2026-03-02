@@ -35,6 +35,35 @@ export type Database = {
         }
         Relationships: []
       }
+      chapters: {
+        Row: {
+          id: string
+          name: string
+          order_index: number
+          subject_id: string
+        }
+        Insert: {
+          id?: string
+          name: string
+          order_index?: number
+          subject_id: string
+        }
+        Update: {
+          id?: string
+          name?: string
+          order_index?: number
+          subject_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "chapters_subject_id_fkey"
+            columns: ["subject_id"]
+            isOneToOne: false
+            referencedRelation: "subjects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       quiz_attempts: {
         Row: {
           answers_json: Json
@@ -165,6 +194,7 @@ export type Database = {
       sessions: {
         Row: {
           avg_focus_block_minutes: number | null
+          chapter_id: string | null
           confidence_post: number | null
           debrief_confusion: string | null
           debrief_key_points: string[] | null
@@ -178,8 +208,10 @@ export type Database = {
           notes_file_url: string | null
           notes_ratio: number | null
           practice_ratio: number | null
+          primary_topic_id: string | null
           research_ratio: number | null
           start_time: string
+          subject_id: string | null
           switches_count: number | null
           switching_rate: number | null
           topic_tags: string[] | null
@@ -187,6 +219,7 @@ export type Database = {
         }
         Insert: {
           avg_focus_block_minutes?: number | null
+          chapter_id?: string | null
           confidence_post?: number | null
           debrief_confusion?: string | null
           debrief_key_points?: string[] | null
@@ -200,8 +233,10 @@ export type Database = {
           notes_file_url?: string | null
           notes_ratio?: number | null
           practice_ratio?: number | null
+          primary_topic_id?: string | null
           research_ratio?: number | null
           start_time?: string
+          subject_id?: string | null
           switches_count?: number | null
           switching_rate?: number | null
           topic_tags?: string[] | null
@@ -209,6 +244,7 @@ export type Database = {
         }
         Update: {
           avg_focus_block_minutes?: number | null
+          chapter_id?: string | null
           confidence_post?: number | null
           debrief_confusion?: string | null
           debrief_key_points?: string[] | null
@@ -222,14 +258,37 @@ export type Database = {
           notes_file_url?: string | null
           notes_ratio?: number | null
           practice_ratio?: number | null
+          primary_topic_id?: string | null
           research_ratio?: number | null
           start_time?: string
+          subject_id?: string | null
           switches_count?: number | null
           switching_rate?: number | null
           topic_tags?: string[] | null
           user_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "sessions_chapter_id_fkey"
+            columns: ["chapter_id"]
+            isOneToOne: false
+            referencedRelation: "chapters"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sessions_primary_topic_id_fkey"
+            columns: ["primary_topic_id"]
+            isOneToOne: false
+            referencedRelation: "topics"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sessions_subject_id_fkey"
+            columns: ["subject_id"]
+            isOneToOne: false
+            referencedRelation: "subjects"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "sessions_user_id_fkey"
             columns: ["user_id"]
@@ -291,6 +350,62 @@ export type Database = {
             columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      subjects: {
+        Row: {
+          color_accent: string
+          created_at: string
+          description: string
+          id: string
+          name: string
+        }
+        Insert: {
+          color_accent?: string
+          created_at?: string
+          description?: string
+          id?: string
+          name: string
+        }
+        Update: {
+          color_accent?: string
+          created_at?: string
+          description?: string
+          id?: string
+          name?: string
+        }
+        Relationships: []
+      }
+      topics: {
+        Row: {
+          chapter_id: string
+          embedding_vector: Json | null
+          id: string
+          name: string
+          order_index: number
+        }
+        Insert: {
+          chapter_id: string
+          embedding_vector?: Json | null
+          id?: string
+          name: string
+          order_index?: number
+        }
+        Update: {
+          chapter_id?: string
+          embedding_vector?: Json | null
+          id?: string
+          name?: string
+          order_index?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "topics_chapter_id_fkey"
+            columns: ["chapter_id"]
+            isOneToOne: false
+            referencedRelation: "chapters"
             referencedColumns: ["id"]
           },
         ]

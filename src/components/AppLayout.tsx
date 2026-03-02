@@ -1,6 +1,7 @@
 import { Link, useLocation } from 'react-router-dom';
 import { LayoutDashboard, Play, History, Settings } from 'lucide-react';
 import OwlLogo from '@/components/OwlLogo';
+import SubjectsSidebar from '@/components/SubjectsSidebar';
 
 const navItems = [
   { to: '/', label: 'Dashboard', icon: LayoutDashboard },
@@ -43,10 +44,18 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         </div>
       </header>
 
-      {/* Main */}
-      <main className="flex-1 container py-8">
-        {children}
-      </main>
+      {/* Body with sidebar */}
+      <div className="flex-1 flex">
+        {/* Left sidebar - subjects */}
+        <aside className="hidden lg:block w-56 border-r border-border py-4 shrink-0">
+          <SubjectsSidebar />
+        </aside>
+
+        {/* Main */}
+        <main className="flex-1 container py-8">
+          {children}
+        </main>
+      </div>
     </div>
   );
 }
