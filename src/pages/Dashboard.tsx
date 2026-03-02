@@ -1,12 +1,13 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useUser } from '@/contexts/UserContext';
-import { getLatestSnapshotPerTopic, getLatestRecommendation, getSessions, callAdviceGenerate, createRecommendation } from '@/services/api';
+import { getLatestSnapshotPerTopic, getLatestSnapshots, getLatestRecommendation, getSessions, callAdviceGenerate, createRecommendation } from '@/services/api';
 import { supabase } from '@/integrations/supabase/client';
 import type { Tables } from '@/integrations/supabase/types';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Play, AlertTriangle, Lightbulb, RefreshCw, ChevronDown, ChevronUp } from 'lucide-react';
+import { Play, AlertTriangle, Lightbulb, RefreshCw, ChevronDown, ChevronUp, Crosshair } from 'lucide-react';
+import TrajectoryMap from '@/components/TrajectoryMap';
 import SkillRadar from '@/components/SkillRadar';
 import RiskMonitor from '@/components/RiskMonitor';
 import AttentionAudit from '@/components/AttentionAudit';
@@ -14,6 +15,7 @@ import AttentionAudit from '@/components/AttentionAudit';
 export default function Dashboard() {
   const { user, loading: userLoading } = useUser();
   const [snapshots, setSnapshots] = useState<Tables<'state_snapshots'>[]>([]);
+  const [allSnapshots, setAllSnapshots] = useState<Tables<'state_snapshots'>[]>([]);
   const [recommendation, setRecommendation] = useState<Tables<'recommendations'> | null>(null);
   const [sessions, setSessions] = useState<Tables<'sessions'>[]>([]);
   const [appConfig, setAppConfig] = useState<any>(null);
@@ -25,13 +27,15 @@ export default function Dashboard() {
     if (!user) return;
     setLoading(true);
     try {
-      const [snaps, rec, sess, configRes] = await Promise.all([
+      const [snaps, allSnaps, rec, sess, configRes] = await Promise.all([
         getLatestSnapshotPerTopic(user.id),
+        getLatestSnapshots(user.id),
         getLatestRecommendation(user.id),
         getSessions(user.id),
         supabase.from('app_config').select('value').eq('key', 'app_config').single(),
       ]);
       setSnapshots(snaps);
+      setAllSnapshots(allSnaps);
       setRecommendation(rec);
       setSessions(sess);
       if (configRes.data?.value) setAppConfig(configRes.data.value);
@@ -113,7 +117,23 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* Top row: Skill Radar + Risk Monitor */}
+      {/* Hero: Trajectory Map */}
+      <Card className="shadow-card border-border gradient-card overflow-hidden">
+        <CardHeader>
+          <CardTitle className="font-display text-lg text-gradient flex items-center gap-2">
+            <Crosshair className="h-4 w-4" /> Learning Trajectory
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          {allSnapshots.length > 0 ? (
+            <TrajectoryMap allSnapshots={allSnapshots} />
+          ) : (
+            <p className="text-muted-foreground text-sm text-center py-12">Complete a session to see your learning trajectory.</p>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Skill Radar + Risk Monitor */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <Card className="shadow-card border-border gradient-card">
           <CardHeader>
