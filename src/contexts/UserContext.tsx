@@ -40,6 +40,7 @@ interface UserContextType {
   authUser: any | null;
   loading: boolean;
   isAuthenticated: boolean;
+  isOnboarded: boolean;
   signOut: () => Promise<void>;
   refreshProfile: () => Promise<void>;
 }
@@ -50,6 +51,7 @@ const UserContext = createContext<UserContextType>({
   authUser: null,
   loading: true,
   isAuthenticated: false,
+  isOnboarded: false,
   signOut: async () => {},
   refreshProfile: async () => {},
 });
@@ -164,6 +166,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
       authUser,
       loading,
       isAuthenticated: !!authUser,
+      isOnboarded: !!profile?.onboarding_completed,
       signOut,
       refreshProfile,
     }}>

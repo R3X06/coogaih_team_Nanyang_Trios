@@ -1,9 +1,25 @@
+import { useNavigate, useLocation } from 'react-router-dom';
+
 interface Props {
   className?: string;
+  /** If true, wraps in a clickable element with navigation behavior */
+  clickable?: boolean;
 }
 
-export default function OwlLogo({ className = "h-8 w-8" }: Props) {
-  return (
+export default function OwlLogo({ className = "h-8 w-8", clickable = true }: Props) {
+  const navigate = useNavigate();
+  const { pathname } = useLocation();
+
+  const handleClick = () => {
+    if (!clickable) return;
+    if (pathname === '/') {
+      navigate('/login');
+    } else {
+      navigate('/');
+    }
+  };
+
+  const svg = (
     <svg viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg" className={className}>
       {/* Body */}
       <ellipse cx="32" cy="38" rx="18" ry="20" fill="hsl(var(--primary) / 0.15)" stroke="hsl(var(--primary))" strokeWidth="2" />
@@ -21,5 +37,18 @@ export default function OwlLogo({ className = "h-8 w-8" }: Props) {
       {/* Chest detail */}
       <path d="M26 48Q32 56 38 48" stroke="hsl(var(--primary))" strokeWidth="1.5" fill="none" opacity="0.4" />
     </svg>
+  );
+
+  if (!clickable) return svg;
+
+  return (
+    <button
+      onClick={handleClick}
+      className="cursor-pointer transition-transform hover:scale-105 focus:outline-none"
+      aria-label="Navigate"
+      type="button"
+    >
+      {svg}
+    </button>
   );
 }
