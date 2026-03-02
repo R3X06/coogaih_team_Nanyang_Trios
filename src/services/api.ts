@@ -90,7 +90,9 @@ export interface QuizGradeOutput {
 }
 
 export async function callQuizGrade(input: QuizGradeInput): Promise<QuizGradeOutput> {
-  return apiFetch('/quiz/grade', input);
+  const { data, error } = await supabase.functions.invoke('quiz-grade', { body: input });
+  if (error) throw error;
+  return data as QuizGradeOutput;
 }
 
 // ============================================================
