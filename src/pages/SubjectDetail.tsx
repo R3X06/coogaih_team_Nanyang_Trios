@@ -170,7 +170,7 @@ export default function SubjectDetail() {
 
       {/* Tabs */}
       <Tabs defaultValue="chapters">
-        <TabsList className="bg-accent/30">
+        <TabsList>
           <TabsTrigger value="chapters" className="gap-1.5"><BookOpen className="h-3.5 w-3.5" /> Chapters</TabsTrigger>
           <TabsTrigger value="gaps" className="gap-1.5"><Grid3X3 className="h-3.5 w-3.5" /> Gap Radar</TabsTrigger>
           <TabsTrigger value="activity" className="gap-1.5"><Activity className="h-3.5 w-3.5" /> Activity</TabsTrigger>

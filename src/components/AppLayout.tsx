@@ -16,23 +16,23 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   return (
     <div className="min-h-screen bg-background flex flex-col">
       {/* Header */}
-      <header className="border-b border-border gradient-hero">
-        <div className="container flex items-center justify-between h-16">
+      <header className="border-b border-border glass">
+        <div className="container flex items-center justify-between h-14">
           <Link to="/" className="flex items-center gap-3">
-            <OwlLogo className="h-8 w-8" />
-            <span className="font-display text-2xl text-gradient tracking-wide">coogaih</span>
+            <OwlLogo className="h-7 w-7" />
+            <span className="font-display text-xl text-gradient tracking-wide">coogaih</span>
           </Link>
-          <nav className="flex items-center gap-1">
+          <nav className="flex items-center gap-0.5">
             {navItems.map(item => {
               const active = pathname === item.to || (item.to !== '/' && pathname.startsWith(item.to));
               return (
                 <Link
                   key={item.to}
                   to={item.to}
-                  className={`flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                  className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium transition-all duration-150 ${
                     active
-                      ? 'bg-primary/10 text-primary'
-                      : 'text-muted-foreground hover:text-foreground hover:bg-accent'
+                      ? 'glass-active text-foreground'
+                      : 'text-muted-foreground hover:text-foreground hover:bg-[hsl(var(--glass-bg-hover))]'
                   }`}
                 >
                   <item.icon className="h-4 w-4" />
@@ -46,8 +46,8 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
 
       {/* Body with sidebar */}
       <div className="flex-1 flex">
-        {/* Left sidebar - subjects */}
-        <aside className="hidden lg:block w-56 border-r border-border py-4 shrink-0">
+        {/* Left sidebar */}
+        <aside className="hidden lg:block w-56 border-r border-border py-4 shrink-0 bg-[hsl(var(--sidebar-background))]">
           <SubjectsSidebar />
         </aside>
 

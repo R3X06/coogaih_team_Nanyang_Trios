@@ -27,10 +27,7 @@ export default function SubjectsSidebar() {
       snapshots.forEach(s => snapMap.set(s.topic_tag, s));
 
       const withMetrics = await Promise.all(allSubjects.map(async (subject) => {
-        const [topics, chapters] = await Promise.all([
-          getTopicsBySubject(subject.id),
-          getChaptersBySubject(subject.id),
-        ]);
+        const topics = await getTopicsBySubject(subject.id);
         const topicSnaps = topics.map(t => snapMap.get(t.id) || snapMap.get(t.name)).filter(Boolean) as Tables<'state_snapshots'>[];
         const avg = (key: keyof Tables<'state_snapshots'>) =>
           topicSnaps.length > 0 ? topicSnaps.reduce((a, s) => a + ((s[key] as number) || 0), 0) / topicSnaps.length : 0;
@@ -42,7 +39,6 @@ export default function SubjectsSidebar() {
 
   useEffect(() => { loadSubjects(); }, [user]);
 
-  // Listen for subject changes via storage event (cross-component refresh)
   useEffect(() => {
     const handler = () => loadSubjects();
     window.addEventListener('subjects-updated', handler);
@@ -59,21 +55,21 @@ export default function SubjectsSidebar() {
         <Link
           key={subject.id}
           to={`/subject/${subject.id}`}
-          className="flex items-center gap-2 px-3 py-2 rounded-md text-sm hover:bg-accent/50 transition-colors group"
+          className="flex items-center gap-2 px-3 py-2 rounded-md text-sm transition-all duration-150 glass-hover group hover:bg-[hsl(var(--glass-bg-hover))]"
         >
-          <span className="h-2.5 w-2.5 rounded-full shrink-0" style={{ background: subject.color_accent || '#f97316' }} />
+          <span className="h-2.5 w-2.5 rounded-full shrink-0" style={{ background: subject.color_accent || 'hsl(25 95% 53%)' }} />
           <div className="flex-1 min-w-0">
             <span className="block truncate text-foreground">{subject.name}</span>
             <span className="text-[10px] text-muted-foreground">
               {topicCount} topic{topicCount !== 1 ? 's' : ''} · {mastery > 0 ? `${(mastery * 100).toFixed(0)}%` : '—'}
             </span>
           </div>
-          {risk >= 0.6 && <AlertTriangle className="h-3 w-3 text-destructive shrink-0" />}
+          {risk >= 0.6 && <AlertTriangle className="h-3 w-3 text-destructive shrink-0 risk-pulse" />}
         </Link>
       ))}
       <Link
         to="/manage/subjects"
-        className="flex items-center gap-2 px-3 py-2 rounded-md text-xs text-primary hover:bg-accent/50 transition-colors"
+        className="flex items-center gap-2 px-3 py-2 rounded-md text-xs text-primary hover:bg-[hsl(var(--glass-bg-hover))] transition-all duration-150"
       >
         <Plus className="h-3.5 w-3.5" />
         <span>{subjects.length === 0 ? 'Add Subject' : 'Manage Subjects'}</span>
