@@ -36,7 +36,7 @@ export default function TrajectoryMap({ allSnapshots }: Props) {
   const mzH = toY(0.7) - mzY;
 
   const palette = [
-    'hsl(25 95% 53%)',   // primary orange
+    'hsl(160 70% 45%)',   // primary teal
     'hsl(210 100% 60%)', // info blue
     'hsl(142 71% 45%)',  // success green
     'hsl(340 80% 55%)',  // pink
@@ -48,7 +48,7 @@ export default function TrajectoryMap({ allSnapshots }: Props) {
       <svg
         viewBox={`0 0 ${W} ${H}`}
         className="w-full max-w-[560px]"
-        style={{ filter: 'drop-shadow(0 0 24px hsl(25 95% 53% / 0.08))' }}
+        style={{ filter: 'drop-shadow(0 0 24px hsl(160 70% 45% / 0.08))' }}
       >
         <defs>
           <radialGradient id="mastery-glow" cx="0.85" cy="0.15">
