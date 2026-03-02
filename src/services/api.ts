@@ -135,6 +135,31 @@ export async function callStateUpdate(input: StateUpdateInput): Promise<StateUpd
 }
 
 // ============================================================
+// 4b) POST /state/analyze (Cognitive Pattern Analyzer)
+// ============================================================
+export interface StateAnalyzeInput {
+  skill_vector: Record<string, number>;
+  velocity: Record<string, number>;
+  risk_score: number;
+  certainty: number;
+  attention_vector: AttentionAnalyzeInput['attention_vector'];
+  recent_trends: any;
+}
+
+export interface StateAnalyzeOutput {
+  learner_profile: string;
+  risk_analysis: string;
+  key_weaknesses: string[];
+  certainty_statement: string;
+}
+
+export async function callStateAnalyze(input: StateAnalyzeInput): Promise<StateAnalyzeOutput> {
+  const { data, error } = await supabase.functions.invoke('state-analyze', { body: input });
+  if (error) throw error;
+  return data as StateAnalyzeOutput;
+}
+
+// ============================================================
 // 5) POST /advice/generate
 // ============================================================
 export interface AdviceGenerateInput {
