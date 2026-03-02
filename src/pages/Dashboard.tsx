@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useUser } from '@/contexts/UserContext';
-import { getLatestSnapshotPerTopic, getLatestRecommendation, getSessions, callGenerateAdvice } from '@/services/api';
+import { getLatestSnapshotPerTopic, getLatestRecommendation, getSessions, callAdviceGenerate, createRecommendation } from '@/services/api';
 import type { Tables } from '@/integrations/supabase/types';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -43,9 +43,34 @@ export default function Dashboard() {
     try {
       const snaps = await getLatestSnapshotPerTopic(user.id);
       const latestSession = sessions[0];
-      const adviceData = await callGenerateAdvice(user.id, snaps, latestSession);
-      const { createRecommendation } = await import('@/services/api');
-      const rec = await createRecommendation(adviceData);
+      const adviceResult = await callAdviceGenerate({
+        user_id: user.id,
+        session_id: latestSession?.id || '',
+        latest_states: snaps.map(s => ({
+          topic_tag: s.topic_tag,
+          skill_vector: {
+            concept_strength: s.concept_strength || 0,
+            stability: s.stability || 0,
+            calibration_gap: s.calibration_gap || 0,
+            stamina: s.stamina || 0,
+            recovery_rate: s.recovery_rate || 0,
+          },
+          velocity: { velocity_magnitude: s.velocity_magnitude || 0, velocity_direction: s.velocity_direction || 0 },
+          risk_score: s.risk_score || 0,
+          certainty: s.certainty || 0,
+        })),
+        historical_intervention_effects: { timed_drills: 0.5, spaced_recall: 0.6, concept_deep_dive: 0.4, short_focus_blocks: 0.5 },
+      });
+      const rec = await createRecommendation({
+        user_id: user.id,
+        session_id: latestSession?.id || null,
+        learner_profile: adviceResult.learner_profile,
+        risk_analysis: adviceResult.risk_analysis,
+        primary_action_json: adviceResult.primary_action,
+        secondary_actions_json: adviceResult.secondary_actions,
+        evidence_json: adviceResult.evidence,
+        certainty_statement: adviceResult.certainty_statement,
+      });
       setRecommendation(rec);
     } catch (e) { console.error(e); }
     setRefreshing(false);

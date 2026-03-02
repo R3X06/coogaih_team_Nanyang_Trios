@@ -1,10 +1,165 @@
 import { supabase } from '@/integrations/supabase/client';
 import type { Tables, TablesInsert } from '@/integrations/supabase/types';
 
-// Editable backend endpoint base URL
-const API_BASE = `https://${import.meta.env.VITE_SUPABASE_PROJECT_ID || 'localhost'}.supabase.co/functions/v1`;
+// ============================================================
+// Editable Backend API Base URL
+// Set VITE_COOGAIH_API_BASE_URL in your .env or environment.
+// Falls back to empty string (mock mode) if not set.
+// ============================================================
+const API_BASE = import.meta.env.VITE_COOGAIH_API_BASE_URL || '';
 
-// ---- User Management ----
+async function apiFetch<T>(path: string, body: any): Promise<T> {
+  if (!API_BASE) {
+    console.warn(`[coogaih] No API base URL set. Using mock for ${path}`);
+    return getMockResponse(path, body);
+  }
+  const res = await fetch(`${API_BASE}${path}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  });
+  if (!res.ok) {
+    const err = await res.text();
+    throw new Error(`API ${path} failed (${res.status}): ${err}`);
+  }
+  return res.json();
+}
+
+// ============================================================
+// 1) POST /attention/analyze
+// ============================================================
+export interface AttentionAnalyzeInput {
+  session_goal: string;
+  attention_vector: {
+    research_ratio: number;
+    practice_ratio: number;
+    notes_ratio: number;
+    distraction_ratio: number;
+    fragmentation: number;
+    avg_focus_block_minutes: number;
+    switching_rate: number;
+    switches_count: number;
+  };
+}
+
+export interface AttentionAnalyzeOutput {
+  session_quality_score: number;
+  attention_issues: string[];
+  behavior_mismatch: string;
+  recommended_adjustment: string;
+}
+
+export async function callAttentionAnalyze(input: AttentionAnalyzeInput): Promise<AttentionAnalyzeOutput> {
+  return apiFetch('/attention/analyze', input);
+}
+
+// ============================================================
+// 2) POST /quiz/generate
+// ============================================================
+export interface QuizGenerateInput {
+  topic_tags: string[];
+  debrief_key_points: string[];
+  notes_text_optional: string;
+  retrieval_namespace: string;
+}
+
+export interface QuizGenerateOutput {
+  questions: any[];
+  source_references: any[];
+}
+
+export async function callQuizGenerate(input: QuizGenerateInput): Promise<QuizGenerateOutput> {
+  return apiFetch('/quiz/generate', input);
+}
+
+// ============================================================
+// 3) POST /quiz/grade
+// ============================================================
+export interface QuizGradeInput {
+  questions: any[];
+  user_answers: any[];
+}
+
+export interface QuizGradeOutput {
+  results: any[];
+  overall_score: number;
+}
+
+export async function callQuizGrade(input: QuizGradeInput): Promise<QuizGradeOutput> {
+  return apiFetch('/quiz/grade', input);
+}
+
+// ============================================================
+// 4) POST /state/update
+// ============================================================
+export interface StateUpdateInput {
+  user_id: string;
+  session_id: string;
+  topic_tags: string[];
+  attention_vector: AttentionAnalyzeInput['attention_vector'];
+  quiz_summary: {
+    overall_score: number;
+    results: any[];
+    confidence_pre_submit_json: any;
+    response_times_json: any;
+  };
+}
+
+export interface StateUpdateOutput {
+  updated_state_by_topic: Array<{
+    topic_tag: string;
+    skill_vector: {
+      concept_strength: number;
+      stability: number;
+      calibration_gap: number;
+      stamina: number;
+      recovery_rate: number;
+    };
+    velocity: {
+      velocity_magnitude: number;
+      velocity_direction: number;
+    };
+    risk_score: number;
+    certainty: number;
+  }>;
+}
+
+export async function callStateUpdate(input: StateUpdateInput): Promise<StateUpdateOutput> {
+  return apiFetch('/state/update', input);
+}
+
+// ============================================================
+// 5) POST /advice/generate
+// ============================================================
+export interface AdviceGenerateInput {
+  user_id: string;
+  session_id: string;
+  latest_states: StateUpdateOutput['updated_state_by_topic'];
+  historical_intervention_effects: {
+    timed_drills: number;
+    spaced_recall: number;
+    concept_deep_dive: number;
+    short_focus_blocks: number;
+  };
+}
+
+export interface AdviceGenerateOutput {
+  learner_profile: string;
+  risk_analysis: string;
+  primary_action: any;
+  secondary_actions: any[];
+  certainty_statement: string;
+  evidence: any[];
+}
+
+export async function callAdviceGenerate(input: AdviceGenerateInput): Promise<AdviceGenerateOutput> {
+  return apiFetch('/advice/generate', input);
+}
+
+// ============================================================
+// Supabase DB operations (unchanged)
+// ============================================================
+
 export async function ensureUser(userId?: string): Promise<Tables<'users'>> {
   if (userId) {
     const { data } = await supabase.from('users').select('*').eq('id', userId).single();
@@ -15,7 +170,6 @@ export async function ensureUser(userId?: string): Promise<Tables<'users'>> {
   return data!;
 }
 
-// ---- Sessions ----
 export async function createSession(insert: TablesInsert<'sessions'>) {
   const { data, error } = await supabase.from('sessions').insert(insert).select().single();
   if (error) throw error;
@@ -40,7 +194,6 @@ export async function getSession(id: string) {
   return data;
 }
 
-// ---- Quizzes ----
 export async function createQuiz(insert: TablesInsert<'quizzes'>) {
   const { data, error } = await supabase.from('quizzes').insert(insert).select().single();
   if (error) throw error;
@@ -52,7 +205,6 @@ export async function getQuizBySession(sessionId: string) {
   return data;
 }
 
-// ---- Quiz Attempts ----
 export async function createQuizAttempt(insert: TablesInsert<'quiz_attempts'>) {
   const { data, error } = await supabase.from('quiz_attempts').insert(insert).select().single();
   if (error) throw error;
@@ -64,7 +216,6 @@ export async function getQuizAttempts(quizId: string) {
   return data || [];
 }
 
-// ---- State Snapshots ----
 export async function getLatestSnapshots(userId: string) {
   const { data } = await supabase.from('state_snapshots').select('*').eq('user_id', userId).order('timestamp', { ascending: false });
   return data || [];
@@ -85,7 +236,6 @@ export async function upsertSnapshot(insert: TablesInsert<'state_snapshots'>) {
   return data!;
 }
 
-// ---- Recommendations ----
 export async function getLatestRecommendation(userId: string) {
   const { data } = await supabase.from('recommendations').select('*').eq('user_id', userId).order('created_at', { ascending: false }).limit(1).maybeSingle();
   return data;
@@ -97,78 +247,86 @@ export async function createRecommendation(insert: TablesInsert<'recommendations
   return data!;
 }
 
-// ---- AI Backend Calls (editable endpoints — mock for MVP) ----
-
-export async function callGenerateQuiz(topics: string[], keyPoints: string[], confusion: string) {
-  // In production: const res = await fetch(`${API_BASE}/generate-quiz`, { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ topics, keyPoints, confusion }) });
-  // Mock response:
-  const questions = [
-    { id: '1', question: `What is the core principle behind ${topics[0] || 'this topic'}?`, type: 'mcq', options: ['Fundamental axioms', 'Derived theorems', 'Empirical observations', 'Historical precedent'], correct: 0 },
-    { id: '2', question: 'Which learning strategy maximizes long-term retention?', type: 'mcq', options: ['Passive re-reading', 'Spaced retrieval practice', 'Highlighting key terms', 'Summarizing notes'], correct: 1 },
-    { id: '3', question: `How would you address the confusion around: "${confusion || 'key concepts'}"?`, type: 'mcq', options: ['Skip and move on', 'Review prerequisites', 'Advanced deep-dive', 'Peer discussion'], correct: 1 },
-    { id: '4', question: 'Interleaved practice is most effective because:', type: 'mcq', options: ['It reduces study time', 'It forces discrimination between concepts', 'It is easier', 'It avoids confusion'], correct: 1 },
-    { id: '5', question: 'Metacognitive calibration refers to:', type: 'mcq', options: ['Speed of recall', 'Accuracy of self-assessment', 'Volume of material covered', 'Depth of understanding'], correct: 1 },
-  ].slice(0, Math.min(5, Math.max(3, topics.length + 2)));
-  return { questions, sources: [{ type: 'mock', note: 'Generated locally for hackathon MVP' }] };
-}
-
-export async function callGradeQuiz(questions: any[], answers: any[], confidences: any[]) {
-  // Mock grading
-  const results = questions.map((q: any, i: number) => ({
-    questionId: q.id,
-    correct: answers[i] === q.correct,
-    userAnswer: answers[i],
-    correctAnswer: q.correct,
-    confidence: confidences[i] || 3,
-  }));
-  const score = results.filter((r: any) => r.correct).length / results.length;
-  return { results, score };
-}
-
-export async function callUpdateState(userId: string, topics: string[], quizScore: number, telemetry: any) {
-  // Mock state update — in production this calls your AI endpoint
-  const snapshots = topics.map(topic => ({
-    user_id: userId,
-    topic_tag: topic,
-    concept_strength: Math.min(1, Math.max(0, quizScore * 0.8 + Math.random() * 0.2)),
-    stability: Math.min(1, Math.max(0, 0.5 + (quizScore - 0.5) * 0.4)),
-    calibration_gap: Math.min(1, Math.max(0, Math.abs(quizScore - 0.7) + Math.random() * 0.15)),
-    stamina: Math.min(1, Math.max(0, 1 - (telemetry?.distraction_ratio || 0.2))),
-    recovery_rate: Math.min(1, Math.max(0, 0.6 + Math.random() * 0.3)),
-    velocity_magnitude: Math.min(1, Math.max(0, Math.random() * 0.5 + 0.3)),
-    velocity_direction: Math.min(1, Math.max(-1, quizScore > 0.6 ? 0.3 + Math.random() * 0.4 : -0.2 - Math.random() * 0.3)),
-    risk_score: Math.min(1, Math.max(0, quizScore < 0.5 ? 0.7 + Math.random() * 0.2 : 0.2 + Math.random() * 0.2)),
-    certainty: Math.min(1, Math.max(0, 0.5 + Math.random() * 0.4)),
-  }));
-  return snapshots;
-}
-
-export async function callGenerateAdvice(userId: string, snapshots: any[], sessionData: any) {
-  // Mock recommendation — in production calls AI endpoint
-  const avgRisk = snapshots.length > 0 ? snapshots.reduce((a: number, s: any) => a + (s.risk_score || 0), 0) / snapshots.length : 0.3;
-  const weakestTopic = snapshots.sort((a: any, b: any) => (a.concept_strength || 0) - (b.concept_strength || 0))[0];
-
-  return {
-    user_id: userId,
-    session_id: sessionData?.id || null,
-    learner_profile: avgRisk > 0.5 ? 'At-risk learner showing gaps in foundational concepts' : 'Progressing learner with solid foundations',
-    risk_analysis: avgRisk > 0.5
-      ? `Elevated risk (${(avgRisk * 100).toFixed(0)}%). Key driver: low concept strength in ${weakestTopic?.topic_tag || 'core topics'}.`
-      : `Moderate risk (${(avgRisk * 100).toFixed(0)}%). Trajectory is positive.`,
-    primary_action_json: {
-      action: weakestTopic ? `Deep review: ${weakestTopic.topic_tag}` : 'Continue current study plan',
-      reason: weakestTopic ? `Concept strength at ${((weakestTopic.concept_strength || 0) * 100).toFixed(0)}%` : 'Steady progress',
-      urgency: avgRisk > 0.5 ? 'high' : 'medium',
-    },
-    secondary_actions_json: [
-      { action: 'Practice with interleaved problem sets', reason: 'Builds discrimination between similar concepts' },
-      { action: 'Schedule spaced review in 48 hours', reason: 'Optimal retention window' },
-    ],
-    evidence_json: {
-      quiz_score: sessionData?.quiz_score || null,
-      attention_profile: sessionData?.telemetry || null,
-      snapshot_count: snapshots.length,
-    },
-    certainty_statement: `Based on ${snapshots.length} data points. Confidence: ${avgRisk > 0.5 ? 'moderate' : 'high'}.`,
-  };
+// ============================================================
+// Mock responses (used when VITE_COOGAIH_API_BASE_URL is not set)
+// ============================================================
+function getMockResponse(path: string, body: any): any {
+  switch (path) {
+    case '/attention/analyze': {
+      const av = body.attention_vector;
+      const issues: string[] = [];
+      if (av.distraction_ratio > 0.3) issues.push('High distraction ratio');
+      if (av.fragmentation > 0.5) issues.push('Fragmented attention');
+      if (av.switching_rate > 0.4) issues.push('Excessive task switching');
+      return {
+        session_quality_score: Math.max(0, 1 - av.distraction_ratio - av.fragmentation * 0.5),
+        attention_issues: issues.length > 0 ? issues : ['No major issues detected'],
+        behavior_mismatch: av.distraction_ratio > 0.3 && body.session_goal === 'practice'
+          ? 'Goal was practice but high distraction observed' : 'None detected',
+        recommended_adjustment: av.fragmentation > 0.5
+          ? 'Try longer uninterrupted focus blocks (25+ min)' : 'Current pattern is effective',
+      };
+    }
+    case '/quiz/generate': {
+      const topics = body.topic_tags || [];
+      const questions = [
+        { id: '1', question: `What is the core principle behind ${topics[0] || 'this topic'}?`, type: 'mcq', options: ['Fundamental axioms', 'Derived theorems', 'Empirical observations', 'Historical precedent'], correct: 0 },
+        { id: '2', question: 'Which strategy maximizes long-term retention?', type: 'mcq', options: ['Passive re-reading', 'Spaced retrieval practice', 'Highlighting', 'Summarizing'], correct: 1 },
+        { id: '3', question: 'Interleaved practice helps because:', type: 'mcq', options: ['Reduces time', 'Forces discrimination', 'Is easier', 'Avoids confusion'], correct: 1 },
+        { id: '4', question: 'Metacognitive calibration refers to:', type: 'mcq', options: ['Speed of recall', 'Accuracy of self-assessment', 'Volume covered', 'Depth of understanding'], correct: 1 },
+        { id: '5', question: 'Active recall is best combined with:', type: 'mcq', options: ['Passive review', 'Interleaved practice', 'Highlighting', 'Re-reading'], correct: 1 },
+      ].slice(0, Math.min(5, Math.max(3, topics.length + 2)));
+      return { questions, source_references: [{ type: 'mock', note: 'Local mock for hackathon' }] };
+    }
+    case '/quiz/grade': {
+      const results = body.questions.map((q: any, i: number) => ({
+        questionId: q.id, correct: body.user_answers[i] === q.correct,
+        userAnswer: body.user_answers[i], correctAnswer: q.correct,
+      }));
+      return { results, overall_score: results.filter((r: any) => r.correct).length / results.length };
+    }
+    case '/state/update': {
+      const score = body.quiz_summary?.overall_score || 0.5;
+      return {
+        updated_state_by_topic: (body.topic_tags || []).map((tag: string) => ({
+          topic_tag: tag,
+          skill_vector: {
+            concept_strength: Math.min(1, score * 0.8 + Math.random() * 0.2),
+            stability: Math.min(1, 0.5 + (score - 0.5) * 0.4),
+            calibration_gap: Math.min(1, Math.abs(score - 0.7) + Math.random() * 0.15),
+            stamina: Math.min(1, 1 - (body.attention_vector?.distraction_ratio || 0.2)),
+            recovery_rate: Math.min(1, 0.6 + Math.random() * 0.3),
+          },
+          velocity: {
+            velocity_magnitude: Math.min(1, Math.random() * 0.5 + 0.3),
+            velocity_direction: score > 0.6 ? 0.3 + Math.random() * 0.4 : -0.2 - Math.random() * 0.3,
+          },
+          risk_score: score < 0.5 ? 0.7 + Math.random() * 0.2 : 0.2 + Math.random() * 0.2,
+          certainty: 0.5 + Math.random() * 0.4,
+        })),
+      };
+    }
+    case '/advice/generate': {
+      const states = body.latest_states || [];
+      const avgRisk = states.length > 0 ? states.reduce((a: number, s: any) => a + (s.risk_score || 0), 0) / states.length : 0.3;
+      const weakest = [...states].sort((a: any, b: any) => (a.skill_vector?.concept_strength || 0) - (b.skill_vector?.concept_strength || 0))[0];
+      return {
+        learner_profile: avgRisk > 0.5 ? 'At-risk learner with foundational gaps' : 'Progressing learner with solid foundations',
+        risk_analysis: `Risk level: ${(avgRisk * 100).toFixed(0)}%. ${weakest ? `Weakest area: ${weakest.topic_tag}` : ''}`,
+        primary_action: {
+          action: weakest ? `Deep review: ${weakest.topic_tag}` : 'Continue current plan',
+          reason: weakest ? `Concept strength at ${((weakest.skill_vector?.concept_strength || 0) * 100).toFixed(0)}%` : 'Steady progress',
+          urgency: avgRisk > 0.5 ? 'high' : 'medium',
+        },
+        secondary_actions: [
+          { action: 'Interleaved problem sets', reason: 'Builds concept discrimination' },
+          { action: 'Spaced review in 48h', reason: 'Optimal retention window' },
+        ],
+        certainty_statement: `Based on ${states.length} data points. Confidence: ${avgRisk > 0.5 ? 'moderate' : 'high'}.`,
+        evidence: states.map((s: any) => ({ topic: s.topic_tag, risk: s.risk_score, strength: s.skill_vector?.concept_strength })),
+      };
+    }
+    default:
+      throw new Error(`Unknown mock path: ${path}`);
+  }
 }

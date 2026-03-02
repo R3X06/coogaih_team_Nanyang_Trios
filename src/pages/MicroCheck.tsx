@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useUser } from '@/contexts/UserContext';
-import { getQuizBySession, getSession, createQuizAttempt, callGradeQuiz, callUpdateState, callGenerateAdvice, upsertSnapshot, createRecommendation } from '@/services/api';
+import { getQuizBySession, getSession, createQuizAttempt, callQuizGrade, callStateUpdate, callAdviceGenerate, upsertSnapshot, createRecommendation } from '@/services/api';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { CheckCircle2, XCircle, Star, ArrowRight } from 'lucide-react';
@@ -55,7 +55,7 @@ export default function MicroCheck() {
 
     try {
       // 1. Grade quiz
-      const gradeResult = await callGradeQuiz(questions, answersList, confidenceList);
+      const gradeResult = await callQuizGrade({ questions, user_answers: answersList });
       setResults(gradeResult);
 
       // 2. Save attempt
@@ -65,7 +65,7 @@ export default function MicroCheck() {
         confidence_pre_submit_json: confidenceList,
         response_times_json: responseTimes,
         results_json: gradeResult.results,
-        overall_score: gradeResult.score,
+        overall_score: gradeResult.overall_score,
       });
 
       // 3. Get session for telemetry
@@ -73,19 +73,62 @@ export default function MicroCheck() {
       const topics = session?.topic_tags || [];
 
       // 4. Update state vectors
-      const snapshots = await callUpdateState(user.id, topics, gradeResult.score, {
-        distraction_ratio: session?.distraction_ratio,
-        fragmentation: session?.fragmentation,
+      const stateResult = await callStateUpdate({
+        user_id: user.id,
+        session_id: sessionId,
+        topic_tags: topics,
+        attention_vector: {
+          research_ratio: session?.research_ratio || 0,
+          practice_ratio: session?.practice_ratio || 0,
+          notes_ratio: session?.notes_ratio || 0,
+          distraction_ratio: session?.distraction_ratio || 0,
+          fragmentation: session?.fragmentation || 0,
+          avg_focus_block_minutes: Number(session?.avg_focus_block_minutes) || 0,
+          switching_rate: session?.switching_rate || 0,
+          switches_count: session?.switches_count || 0,
+        },
+        quiz_summary: {
+          overall_score: gradeResult.overall_score,
+          results: gradeResult.results,
+          confidence_pre_submit_json: confidenceList,
+          response_times_json: responseTimes,
+        },
       });
 
       // 5. Save snapshots
-      for (const snap of snapshots) {
-        await upsertSnapshot(snap);
+      for (const topicState of stateResult.updated_state_by_topic) {
+        await upsertSnapshot({
+          user_id: user.id,
+          topic_tag: topicState.topic_tag,
+          concept_strength: topicState.skill_vector.concept_strength,
+          stability: topicState.skill_vector.stability,
+          calibration_gap: topicState.skill_vector.calibration_gap,
+          stamina: topicState.skill_vector.stamina,
+          recovery_rate: topicState.skill_vector.recovery_rate,
+          velocity_magnitude: topicState.velocity.velocity_magnitude,
+          velocity_direction: topicState.velocity.velocity_direction,
+          risk_score: topicState.risk_score,
+          certainty: topicState.certainty,
+        });
       }
 
       // 6. Generate advice
-      const adviceData = await callGenerateAdvice(user.id, snapshots, { id: sessionId, quiz_score: gradeResult.score, telemetry: session });
-      await createRecommendation(adviceData);
+      const adviceResult = await callAdviceGenerate({
+        user_id: user.id,
+        session_id: sessionId,
+        latest_states: stateResult.updated_state_by_topic,
+        historical_intervention_effects: { timed_drills: 0.5, spaced_recall: 0.6, concept_deep_dive: 0.4, short_focus_blocks: 0.5 },
+      });
+      await createRecommendation({
+        user_id: user.id,
+        session_id: sessionId,
+        learner_profile: adviceResult.learner_profile,
+        risk_analysis: adviceResult.risk_analysis,
+        primary_action_json: adviceResult.primary_action,
+        secondary_actions_json: adviceResult.secondary_actions,
+        evidence_json: adviceResult.evidence,
+        certainty_statement: adviceResult.certainty_statement,
+      });
 
       setSubmitted(true);
     } catch (e) { console.error(e); }
@@ -119,7 +162,7 @@ export default function MicroCheck() {
       <div>
         <h1 className="font-display text-3xl text-gradient mb-1">Micro-Check</h1>
         <p className="text-muted-foreground text-sm">
-          {submitted ? `Score: ${(results.score * 100).toFixed(0)}%` : `${questions.length} questions · Rate your confidence`}
+          {submitted ? `Score: ${(results.overall_score * 100).toFixed(0)}%` : `${questions.length} questions · Rate your confidence`}
         </p>
       </div>
 
@@ -186,7 +229,7 @@ export default function MicroCheck() {
         <div className="space-y-3">
           <Card className="shadow-card border-primary/30 gradient-accent">
             <CardContent className="p-6 text-center">
-              <p className="text-4xl font-bold text-gradient mb-1">{(results.score * 100).toFixed(0)}%</p>
+              <p className="text-4xl font-bold text-gradient mb-1">{(results.overall_score * 100).toFixed(0)}%</p>
               <p className="text-sm text-muted-foreground">Learning state + recommendations updated</p>
             </CardContent>
           </Card>

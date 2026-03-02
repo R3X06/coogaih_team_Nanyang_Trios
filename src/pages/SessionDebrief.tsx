@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { getSession, updateSession, createQuiz, callGenerateQuiz } from '@/services/api';
+import { getSession, updateSession, createQuiz, callQuizGenerate } from '@/services/api';
 import type { Tables } from '@/integrations/supabase/types';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -55,13 +55,18 @@ export default function SessionDebrief() {
       });
 
       // Generate quiz via backend
-      const quizData = await callGenerateQuiz(topics, keyPoints.filter(k => k.trim()), confusion);
+      const quizData = await callQuizGenerate({
+        topic_tags: topics,
+        debrief_key_points: keyPoints.filter(k => k.trim()),
+        notes_text_optional: notesUrl || '',
+        retrieval_namespace: 'syllabus_and_notes',
+      });
 
       // Save quiz to DB
       await createQuiz({
         session_id: sessionId,
         questions_json: quizData.questions,
-        sources_json: quizData.sources,
+        sources_json: quizData.source_references,
       });
 
       navigate(`/session/quiz/${sessionId}`);
