@@ -20,7 +20,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         <div className="container flex items-center justify-between h-14">
           <Link to="/" className="flex items-center gap-3">
             <OwlLogo className="h-7 w-7" />
-            <span className="font-display text-xl text-gradient tracking-wide drop-shadow-[0_0_12px_hsl(var(--primary)/0.6)] animate-pulse-glow">coogaih</span>
+            <span className="font-display text-xl text-gradient tracking-wide drop-shadow-[0_0_12px_hsl(var(--primary)/0.5)] transition-all duration-300 hover:drop-shadow-[0_0_20px_hsl(var(--primary)/0.85)]">coogaih</span>
           </Link>
           <nav className="flex items-center gap-0.5">
             {navItems.map(item => {
