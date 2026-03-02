@@ -1,16 +1,20 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useUser } from '@/contexts/UserContext';
 import { getSubjects, createSubject, deleteSubject, getChaptersBySubject, createChapter, deleteChapter, getTopicsByChapter, createTopic, deleteTopic } from '@/services/api';
+import { supabase } from '@/integrations/supabase/client';
 import type { Tables } from '@/integrations/supabase/types';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { Plus, Trash2, ChevronDown, ChevronRight, BookOpen, Layers, Tag } from 'lucide-react';
+import { Plus, Trash2, ChevronDown, ChevronRight, BookOpen, Layers, Tag, Pencil, AlertTriangle } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { toast } from '@/hooks/use-toast';
 
 export default function ManageSubjects() {
   const { user } = useUser();
+  const navigate = useNavigate();
   const [subjects, setSubjects] = useState<Tables<'subjects'>[]>([]);
   const [expandedSubject, setExpandedSubject] = useState<string | null>(null);
   const [expandedChapter, setExpandedChapter] = useState<string | null>(null);
@@ -24,6 +28,14 @@ export default function ManageSubjects() {
   const [newChapterName, setNewChapterName] = useState('');
   const [newTopicName, setNewTopicName] = useState('');
   const [addSubjectOpen, setAddSubjectOpen] = useState(false);
+
+  // Edit forms
+  const [editSubjectId, setEditSubjectId] = useState<string | null>(null);
+  const [editSubjectName, setEditSubjectName] = useState('');
+  const [editSubjectDesc, setEditSubjectDesc] = useState('');
+  const [editSubjectColor, setEditSubjectColor] = useState('#f97316');
+
+  const notifySidebarRefresh = () => window.dispatchEvent(new Event('subjects-updated'));
 
   const loadSubjects = async () => {
     const data = await getSubjects();
@@ -44,15 +56,38 @@ export default function ManageSubjects() {
 
   const handleAddSubject = async () => {
     if (!newSubjectName.trim() || !user) return;
-    await createSubject({ name: newSubjectName.trim(), description: newSubjectDesc.trim(), color_accent: newSubjectColor, user_id: user.id });
+    const subj = await createSubject({ name: newSubjectName.trim(), description: newSubjectDesc.trim(), color_accent: newSubjectColor, user_id: user.id });
     setNewSubjectName(''); setNewSubjectDesc(''); setNewSubjectColor('#f97316');
     setAddSubjectOpen(false);
     await loadSubjects();
+    notifySidebarRefresh();
+    navigate(`/subject/${subj.id}`);
+  };
+
+  const handleEditSubject = async () => {
+    if (!editSubjectId || !editSubjectName.trim()) return;
+    await supabase.from('subjects').update({ name: editSubjectName.trim(), description: editSubjectDesc.trim(), color_accent: editSubjectColor }).eq('id', editSubjectId);
+    setEditSubjectId(null);
+    await loadSubjects();
+    notifySidebarRefresh();
   };
 
   const handleDeleteSubject = async (id: string) => {
+    const subChapters = chapters[id];
+    if (subChapters && subChapters.length > 0) {
+      toast({ title: 'Warning', description: 'This will delete all chapters and topics under this subject.', variant: 'destructive' });
+    }
+    // Delete topics under chapters, then chapters, then subject
+    const chs = await getChaptersBySubject(id);
+    for (const ch of chs) {
+      const tps = await getTopicsByChapter(ch.id);
+      for (const t of tps) await deleteTopic(t.id);
+      await deleteChapter(ch.id);
+    }
     await deleteSubject(id);
+    if (expandedSubject === id) setExpandedSubject(null);
     await loadSubjects();
+    notifySidebarRefresh();
   };
 
   const handleAddChapter = async (subjectId: string) => {
@@ -61,11 +96,15 @@ export default function ManageSubjects() {
     await createChapter({ subject_id: subjectId, name: newChapterName.trim(), order_index: existing.length, user_id: user.id });
     setNewChapterName('');
     await loadChapters(subjectId);
+    notifySidebarRefresh();
   };
 
   const handleDeleteChapter = async (id: string, subjectId: string) => {
+    const tps = await getTopicsByChapter(id);
+    for (const t of tps) await deleteTopic(t.id);
     await deleteChapter(id);
     await loadChapters(subjectId);
+    notifySidebarRefresh();
   };
 
   const handleAddTopic = async (chapterId: string) => {
@@ -74,11 +113,13 @@ export default function ManageSubjects() {
     await createTopic({ chapter_id: chapterId, name: newTopicName.trim(), order_index: existing.length, user_id: user.id });
     setNewTopicName('');
     await loadTopics(chapterId);
+    notifySidebarRefresh();
   };
 
   const handleDeleteTopic = async (id: string, chapterId: string) => {
     await deleteTopic(id);
     await loadTopics(chapterId);
+    notifySidebarRefresh();
   };
 
   const toggleSubject = (id: string) => {
@@ -109,7 +150,7 @@ export default function ManageSubjects() {
           <DialogContent>
             <DialogHeader><DialogTitle>New Subject</DialogTitle></DialogHeader>
             <div className="space-y-3">
-              <Input value={newSubjectName} onChange={e => setNewSubjectName(e.target.value)} placeholder="Subject name" className="bg-accent/30" />
+              <Input value={newSubjectName} onChange={e => setNewSubjectName(e.target.value)} placeholder="Subject name" className="bg-accent/30" onKeyDown={e => e.key === 'Enter' && handleAddSubject()} />
               <Textarea value={newSubjectDesc} onChange={e => setNewSubjectDesc(e.target.value)} placeholder="Description (optional)" rows={2} className="bg-accent/30" />
               <div className="flex items-center gap-2">
                 <label className="text-xs text-muted-foreground">Color:</label>
@@ -120,6 +161,22 @@ export default function ManageSubjects() {
           </DialogContent>
         </Dialog>
       </div>
+
+      {/* Edit Subject Dialog */}
+      <Dialog open={!!editSubjectId} onOpenChange={(open) => { if (!open) setEditSubjectId(null); }}>
+        <DialogContent>
+          <DialogHeader><DialogTitle>Edit Subject</DialogTitle></DialogHeader>
+          <div className="space-y-3">
+            <Input value={editSubjectName} onChange={e => setEditSubjectName(e.target.value)} placeholder="Subject name" className="bg-accent/30" />
+            <Textarea value={editSubjectDesc} onChange={e => setEditSubjectDesc(e.target.value)} placeholder="Description" rows={2} className="bg-accent/30" />
+            <div className="flex items-center gap-2">
+              <label className="text-xs text-muted-foreground">Color:</label>
+              <input type="color" value={editSubjectColor} onChange={e => setEditSubjectColor(e.target.value)} className="h-8 w-12 rounded cursor-pointer" />
+            </div>
+            <Button onClick={handleEditSubject} className="w-full gradient-primary text-primary-foreground">Save Changes</Button>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {subjects.length === 0 && (
         <Card className="shadow-card border-border gradient-card">
@@ -143,9 +200,20 @@ export default function ManageSubjects() {
                     <span className="h-3 w-3 rounded-full" style={{ background: subject.color_accent || '#f97316' }} />
                     <CardTitle className="text-sm font-semibold">{subject.name}</CardTitle>
                   </div>
-                  <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-destructive" onClick={e => { e.stopPropagation(); handleDeleteSubject(subject.id); }}>
-                    <Trash2 className="h-3.5 w-3.5" />
-                  </Button>
+                  <div className="flex gap-1">
+                    <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-primary" onClick={e => {
+                      e.stopPropagation();
+                      setEditSubjectId(subject.id);
+                      setEditSubjectName(subject.name);
+                      setEditSubjectDesc(subject.description || '');
+                      setEditSubjectColor(subject.color_accent || '#f97316');
+                    }}>
+                      <Pencil className="h-3.5 w-3.5" />
+                    </Button>
+                    <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-destructive" onClick={e => { e.stopPropagation(); handleDeleteSubject(subject.id); }}>
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </Button>
+                  </div>
                 </div>
               </CardHeader>
             </button>
