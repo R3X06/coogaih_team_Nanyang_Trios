@@ -52,7 +52,7 @@
     --info: 210 100% 60%;
     --info-foreground: 222 47% 6%;
 
-    --gradient-primary: linear-gradient(135deg, hsl(25 95% 53%), hsl(35 95% 60%));
+    --gradient-primary: linear-gradient(135deg, hsl(340 80% 55%), hsl(25 95% 55%), hsl(45 95% 58%));
     --gradient-hero: linear-gradient(135deg, hsl(260 40% 12%), hsl(270 35% 16%), hsl(222 45% 12%));
     --gradient-card: linear-gradient(160deg, hsl(260 35% 13%), hsl(270 30% 9%));
     --gradient-accent: linear-gradient(135deg, hsl(25 95% 53% / 0.12), hsl(260 35% 16%), hsl(270 30% 10%));
@@ -135,9 +135,13 @@
   }
 
   .text-gradient {
-    background: var(--gradient-primary);
+    background: linear-gradient(135deg, hsl(340 80% 55%), hsl(25 95% 55%), hsl(45 95% 58%));
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
+  }
+
+  .border-gradient {
+    border-image: linear-gradient(135deg, hsl(340 80% 55%), hsl(25 95% 55%), hsl(45 95% 58%)) 1;
   }
 }

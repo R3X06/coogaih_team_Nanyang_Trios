@@ -32,7 +32,7 @@ export default function SessionHistory() {
             <Button variant="ghost" size="icon"><ArrowLeft className="h-4 w-4" /></Button>
           </Link>
           <div>
-            <h1 className="font-display text-2xl text-primary">Session Detail</h1>
+            <h1 className="font-display text-2xl text-gradient">Session Detail</h1>
             <p className="text-muted-foreground text-sm">{new Date(session.startTime).toLocaleString()}</p>
           </div>
         </div>
@@ -138,7 +138,7 @@ export default function SessionHistory() {
 
   return (
     <div className="max-w-2xl mx-auto space-y-6 animate-fade-in">
-      <h1 className="font-display text-3xl text-primary">Session History</h1>
+      <h1 className="font-display text-3xl text-gradient">Session History</h1>
 
       {completedSessions.length === 0 ? (
         <Card className="shadow-card border-border">

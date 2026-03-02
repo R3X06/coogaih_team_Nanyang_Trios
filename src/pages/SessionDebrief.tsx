@@ -49,7 +49,7 @@ export default function SessionDebrief() {
   return (
     <div className="max-w-2xl mx-auto space-y-6 animate-fade-in">
       <div>
-        <h1 className="font-display text-3xl text-primary mb-1">Session Debrief</h1>
+        <h1 className="font-display text-3xl text-gradient mb-1">Session Debrief</h1>
         <p className="text-muted-foreground text-sm">Duration: {duration} · {session?.telemetry.length || 0} telemetry readings</p>
       </div>
 
