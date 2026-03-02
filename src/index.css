@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=UnifrakturMaguntia&family=Inter:wght@300;400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Sreda&family=Inter:wght@300;400;500;600;700&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -61,7 +61,7 @@
     --shadow-glow: 0 0 30px hsl(25 95% 53% / 0.15);
     --shadow-card: 0 4px 24px hsl(222 47% 2% / 0.5);
 
-    --font-display: 'UnifrakturMaguntia', cursive;
+    --font-display: 'Sreda', serif;
     --font-body: 'Inter', system-ui, sans-serif;
   }
 }
