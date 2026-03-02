@@ -296,6 +296,48 @@ export async function createRecommendation(insert: TablesInsert<'recommendations
 }
 
 // ============================================================
+// Subject / Chapter / Topic CRUD
+// ============================================================
+export async function getSubjects() {
+  const { data, error } = await supabase.from('subjects').select('*').order('name');
+  if (error) throw error;
+  return data || [];
+}
+
+export async function getSubject(id: string) {
+  const { data, error } = await supabase.from('subjects').select('*').eq('id', id).single();
+  if (error) throw error;
+  return data;
+}
+
+export async function getChaptersBySubject(subjectId: string) {
+  const { data, error } = await supabase.from('chapters').select('*').eq('subject_id', subjectId).order('order_index');
+  if (error) throw error;
+  return data || [];
+}
+
+export async function getTopicsByChapter(chapterId: string) {
+  const { data, error } = await supabase.from('topics').select('*').eq('chapter_id', chapterId).order('order_index');
+  if (error) throw error;
+  return data || [];
+}
+
+export async function getTopicsBySubject(subjectId: string) {
+  const chapters = await getChaptersBySubject(subjectId);
+  const chapterIds = chapters.map(c => c.id);
+  if (chapterIds.length === 0) return [];
+  const { data, error } = await supabase.from('topics').select('*').in('chapter_id', chapterIds).order('order_index');
+  if (error) throw error;
+  return data || [];
+}
+
+export async function getSessionsBySubject(userId: string, subjectId: string) {
+  const { data, error } = await supabase.from('sessions').select('*').eq('user_id', userId).eq('subject_id', subjectId).order('start_time', { ascending: false });
+  if (error) throw error;
+  return data || [];
+}
+
+// ============================================================
 // Mock responses (used when VITE_COOGAIH_API_BASE_URL is not set)
 // ============================================================
 function getMockResponse(path: string, body: any): any {

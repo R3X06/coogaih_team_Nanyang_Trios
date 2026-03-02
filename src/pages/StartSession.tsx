@@ -1,7 +1,8 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useUser } from '@/contexts/UserContext';
-import { createSession, updateSession, callAttentionAnalyze } from '@/services/api';
+import { createSession, updateSession, callAttentionAnalyze, getSubjects, getChaptersBySubject, getTopicsByChapter } from '@/services/api';
+import type { Tables } from '@/integrations/supabase/types';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
@@ -27,6 +28,34 @@ export default function StartSession() {
   const [elapsed, setElapsed] = useState(0);
   const [startTime, setStartTime] = useState<string | null>(null);
   const intervalRef = useRef<number | null>(null);
+
+  // Subject/Chapter/Topic selection
+  const [subjects, setSubjects] = useState<Tables<'subjects'>[]>([]);
+  const [chapters, setChapters] = useState<Tables<'chapters'>[]>([]);
+  const [topics, setTopics] = useState<Tables<'topics'>[]>([]);
+  const [selectedSubject, setSelectedSubject] = useState<string>('');
+  const [selectedChapter, setSelectedChapter] = useState<string>('');
+  const [selectedTopic, setSelectedTopic] = useState<string>('');
+
+  useEffect(() => {
+    getSubjects().then(setSubjects).catch(console.error);
+  }, []);
+
+  useEffect(() => {
+    if (selectedSubject) {
+      getChaptersBySubject(selectedSubject).then(setChapters).catch(console.error);
+      setSelectedChapter('');
+      setSelectedTopic('');
+      setTopics([]);
+    }
+  }, [selectedSubject]);
+
+  useEffect(() => {
+    if (selectedChapter) {
+      getTopicsByChapter(selectedChapter).then(setTopics).catch(console.error);
+      setSelectedTopic('');
+    }
+  }, [selectedChapter]);
 
   // Telemetry
   const [researchRatio, setResearchRatio] = useState(0.25);
@@ -71,8 +100,16 @@ export default function StartSession() {
         user_id: user.id,
         goal_type: goalType as any,
         start_time: now,
-      });
+        subject_id: selectedSubject || null,
+        chapter_id: selectedChapter || null,
+        primary_topic_id: selectedTopic || null,
+      } as any);
       setSessionId(session.id);
+      // Store selection for debrief
+      if (selectedTopic) {
+        const topicObj = topics.find(t => t.id === selectedTopic);
+        if (topicObj) sessionStorage.setItem(`session_topic_${session.id}`, topicObj.name);
+      }
       setRunning(true);
       setElapsed(0);
     } catch (e) { console.error(e); }
@@ -149,19 +186,69 @@ export default function StartSession() {
       {!sessionId && (
         <Card className="shadow-card border-border gradient-card">
           <CardHeader>
-            <CardTitle className="text-sm flex items-center gap-2"><Timer className="h-4 w-4 text-primary" /> Session Goal</CardTitle>
+            <CardTitle className="text-sm flex items-center gap-2"><Timer className="h-4 w-4 text-primary" /> Session Setup</CardTitle>
           </CardHeader>
-          <CardContent>
-            <Select value={goalType} onValueChange={setGoalType}>
-              <SelectTrigger className="bg-accent/30">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {GOAL_TYPES.map(g => (
-                  <SelectItem key={g.value} value={g.value}>{g.label}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+          <CardContent className="space-y-4">
+            <div>
+              <label className="text-xs text-muted-foreground mb-1 block">Goal</label>
+              <Select value={goalType} onValueChange={setGoalType}>
+                <SelectTrigger className="bg-accent/30">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {GOAL_TYPES.map(g => (
+                    <SelectItem key={g.value} value={g.value}>{g.label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            {subjects.length > 0 && (
+              <>
+                <div>
+                  <label className="text-xs text-muted-foreground mb-1 block">Subject</label>
+                  <Select value={selectedSubject} onValueChange={setSelectedSubject}>
+                    <SelectTrigger className="bg-accent/30">
+                      <SelectValue placeholder="Select subject..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {subjects.map(s => (
+                        <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                {chapters.length > 0 && (
+                  <div>
+                    <label className="text-xs text-muted-foreground mb-1 block">Chapter</label>
+                    <Select value={selectedChapter} onValueChange={setSelectedChapter}>
+                      <SelectTrigger className="bg-accent/30">
+                        <SelectValue placeholder="Select chapter..." />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {chapters.map(c => (
+                          <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
+                {topics.length > 0 && (
+                  <div>
+                    <label className="text-xs text-muted-foreground mb-1 block">Primary Topic</label>
+                    <Select value={selectedTopic} onValueChange={setSelectedTopic}>
+                      <SelectTrigger className="bg-accent/30">
+                        <SelectValue placeholder="Select topic..." />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {topics.map(t => (
+                          <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
+              </>
+            )}
           </CardContent>
         </Card>
       )}
