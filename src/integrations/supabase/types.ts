@@ -70,6 +70,44 @@ export type Database = {
           },
         ]
       }
+      cognitive_snapshots: {
+        Row: {
+          confidence_level: string
+          created_at: string
+          id: string
+          input_metrics: Json
+          session_count: number
+          summary: Json
+          user_id: string
+        }
+        Insert: {
+          confidence_level?: string
+          created_at?: string
+          id?: string
+          input_metrics?: Json
+          session_count?: number
+          summary?: Json
+          user_id: string
+        }
+        Update: {
+          confidence_level?: string
+          created_at?: string
+          id?: string
+          input_metrics?: Json
+          session_count?: number
+          summary?: Json
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cognitive_snapshots_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       manual_logs: {
         Row: {
           activity_type: Database["public"]["Enums"]["activity_type"]

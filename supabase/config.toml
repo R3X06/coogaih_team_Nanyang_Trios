@@ -1,1 +1,4 @@
 project_id = "kuysjpucrruregptgejv"
+
+[functions.cognitive-snapshot]
+verify_jwt = false

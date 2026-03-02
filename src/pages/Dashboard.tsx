@@ -12,6 +12,7 @@ import TrajectoryMap from '@/components/TrajectoryMap';
 import SkillRadar from '@/components/SkillRadar';
 import RiskMonitor from '@/components/RiskMonitor';
 import AttentionAudit from '@/components/AttentionAudit';
+import CognitiveSnapshotCard from '@/components/CognitiveSnapshotCard';
 
 export default function Dashboard() {
   const { user, loading: userLoading } = useUser();
@@ -319,6 +320,9 @@ export default function Dashboard() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Cognitive Snapshot */}
+      <CognitiveSnapshotCard />
 
       {/* Recent Activity */}
       {(sessions.length > 0 || manualLogs.length > 0) && (
