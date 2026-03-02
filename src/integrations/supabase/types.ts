@@ -153,6 +153,164 @@ export type Database = {
           },
         ]
       }
+      profiles: {
+        Row: {
+          allow_ai_use_of_debrief: boolean | null
+          allow_notes_indexing: boolean | null
+          avatar_id: string | null
+          common_failure_mode: string[] | null
+          confidence_style:
+            | Database["public"]["Enums"]["confidence_style"]
+            | null
+          created_at: string | null
+          data_retention_days: number | null
+          delete_data_on_request: boolean | null
+          distraction_risk_self_rating: number | null
+          education_level: Database["public"]["Enums"]["education_level"] | null
+          institution: string | null
+          notification_opt_in: boolean | null
+          onboarding_completed: boolean | null
+          peak_focus_time: Database["public"]["Enums"]["peak_focus_time"] | null
+          persistence_style:
+            | Database["public"]["Enums"]["persistence_style"]
+            | null
+          preferred_feedback_tone:
+            | Database["public"]["Enums"]["feedback_tone"]
+            | null
+          preferred_guidance_style:
+            | Database["public"]["Enums"]["guidance_style"]
+            | null
+          preferred_name: string | null
+          preferred_session_length_minutes: number | null
+          primary_goal: Database["public"]["Enums"]["primary_goal"] | null
+          profile_completion: number | null
+          self_reported_strength:
+            | Database["public"]["Enums"]["strength_type"]
+            | null
+          study_environment:
+            | Database["public"]["Enums"]["study_environment"]
+            | null
+          study_language: string | null
+          telemetry_level: Database["public"]["Enums"]["telemetry_level"] | null
+          timezone: string | null
+          typical_available_minutes_weekday: number | null
+          typical_available_minutes_weekend: number | null
+          updated_at: string | null
+          user_id: string
+          year_of_study: string | null
+        }
+        Insert: {
+          allow_ai_use_of_debrief?: boolean | null
+          allow_notes_indexing?: boolean | null
+          avatar_id?: string | null
+          common_failure_mode?: string[] | null
+          confidence_style?:
+            | Database["public"]["Enums"]["confidence_style"]
+            | null
+          created_at?: string | null
+          data_retention_days?: number | null
+          delete_data_on_request?: boolean | null
+          distraction_risk_self_rating?: number | null
+          education_level?:
+            | Database["public"]["Enums"]["education_level"]
+            | null
+          institution?: string | null
+          notification_opt_in?: boolean | null
+          onboarding_completed?: boolean | null
+          peak_focus_time?:
+            | Database["public"]["Enums"]["peak_focus_time"]
+            | null
+          persistence_style?:
+            | Database["public"]["Enums"]["persistence_style"]
+            | null
+          preferred_feedback_tone?:
+            | Database["public"]["Enums"]["feedback_tone"]
+            | null
+          preferred_guidance_style?:
+            | Database["public"]["Enums"]["guidance_style"]
+            | null
+          preferred_name?: string | null
+          preferred_session_length_minutes?: number | null
+          primary_goal?: Database["public"]["Enums"]["primary_goal"] | null
+          profile_completion?: number | null
+          self_reported_strength?:
+            | Database["public"]["Enums"]["strength_type"]
+            | null
+          study_environment?:
+            | Database["public"]["Enums"]["study_environment"]
+            | null
+          study_language?: string | null
+          telemetry_level?:
+            | Database["public"]["Enums"]["telemetry_level"]
+            | null
+          timezone?: string | null
+          typical_available_minutes_weekday?: number | null
+          typical_available_minutes_weekend?: number | null
+          updated_at?: string | null
+          user_id: string
+          year_of_study?: string | null
+        }
+        Update: {
+          allow_ai_use_of_debrief?: boolean | null
+          allow_notes_indexing?: boolean | null
+          avatar_id?: string | null
+          common_failure_mode?: string[] | null
+          confidence_style?:
+            | Database["public"]["Enums"]["confidence_style"]
+            | null
+          created_at?: string | null
+          data_retention_days?: number | null
+          delete_data_on_request?: boolean | null
+          distraction_risk_self_rating?: number | null
+          education_level?:
+            | Database["public"]["Enums"]["education_level"]
+            | null
+          institution?: string | null
+          notification_opt_in?: boolean | null
+          onboarding_completed?: boolean | null
+          peak_focus_time?:
+            | Database["public"]["Enums"]["peak_focus_time"]
+            | null
+          persistence_style?:
+            | Database["public"]["Enums"]["persistence_style"]
+            | null
+          preferred_feedback_tone?:
+            | Database["public"]["Enums"]["feedback_tone"]
+            | null
+          preferred_guidance_style?:
+            | Database["public"]["Enums"]["guidance_style"]
+            | null
+          preferred_name?: string | null
+          preferred_session_length_minutes?: number | null
+          primary_goal?: Database["public"]["Enums"]["primary_goal"] | null
+          profile_completion?: number | null
+          self_reported_strength?:
+            | Database["public"]["Enums"]["strength_type"]
+            | null
+          study_environment?:
+            | Database["public"]["Enums"]["study_environment"]
+            | null
+          study_language?: string | null
+          telemetry_level?:
+            | Database["public"]["Enums"]["telemetry_level"]
+            | null
+          timezone?: string | null
+          typical_available_minutes_weekday?: number | null
+          typical_available_minutes_weekend?: number | null
+          updated_at?: string | null
+          user_id?: string
+          year_of_study?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "profiles_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       quiz_attempts: {
         Row: {
           answers_json: Json
@@ -522,19 +680,28 @@ export type Database = {
       }
       users: {
         Row: {
+          auth_provider: Database["public"]["Enums"]["auth_provider"] | null
           created_at: string
           display_name: string | null
+          email: string | null
           id: string
+          last_active_at: string | null
         }
         Insert: {
+          auth_provider?: Database["public"]["Enums"]["auth_provider"] | null
           created_at?: string
           display_name?: string | null
+          email?: string | null
           id?: string
+          last_active_at?: string | null
         }
         Update: {
+          auth_provider?: Database["public"]["Enums"]["auth_provider"] | null
           created_at?: string
           display_name?: string | null
+          email?: string | null
           id?: string
+          last_active_at?: string | null
         }
         Relationships: []
       }
@@ -547,8 +714,31 @@ export type Database = {
     }
     Enums: {
       activity_type: "revision" | "practice" | "research" | "notes" | "mixed"
+      auth_provider: "microsoft" | "email" | "google" | "apple"
+      confidence_style:
+        | "often_overconfident"
+        | "often_underconfident"
+        | "calibrated"
+        | "unsure"
+      education_level: "secondary" | "poly" | "university" | "other"
+      feedback_tone: "direct" | "neutral" | "encouraging"
       goal_type: "revision" | "practice" | "research" | "notes" | "mixed"
+      guidance_style: "tutor" | "consultant" | "tracker"
+      peak_focus_time: "morning" | "afternoon" | "evening" | "late_night"
+      persistence_style:
+        | "push_through"
+        | "avoid_when_stuck"
+        | "take_break_then_return"
+      primary_goal:
+        | "exam"
+        | "coursework"
+        | "skills"
+        | "consistency"
+        | "tracking"
       session_source: "timer" | "manual"
+      strength_type: "concepts" | "practice" | "both" | "unsure"
+      study_environment: "quiet" | "noisy" | "mixed"
+      telemetry_level: "none" | "basic_domain_only" | "enhanced_titles_optional"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -677,8 +867,32 @@ export const Constants = {
   public: {
     Enums: {
       activity_type: ["revision", "practice", "research", "notes", "mixed"],
+      auth_provider: ["microsoft", "email", "google", "apple"],
+      confidence_style: [
+        "often_overconfident",
+        "often_underconfident",
+        "calibrated",
+        "unsure",
+      ],
+      education_level: ["secondary", "poly", "university", "other"],
+      feedback_tone: ["direct", "neutral", "encouraging"],
       goal_type: ["revision", "practice", "research", "notes", "mixed"],
+      guidance_style: ["tutor", "consultant", "tracker"],
+      peak_focus_time: ["morning", "afternoon", "evening", "late_night"],
+      persistence_style: [
+        "push_through",
+        "avoid_when_stuck",
+        "take_break_then_return",
+      ],
+      primary_goal: ["exam", "coursework", "skills", "consistency", "tracking"],
       session_source: ["timer", "manual"],
+      strength_type: ["concepts", "practice", "both", "unsure"],
+      study_environment: ["quiet", "noisy", "mixed"],
+      telemetry_level: [
+        "none",
+        "basic_domain_only",
+        "enhanced_titles_optional",
+      ],
     },
   },
 } as const
