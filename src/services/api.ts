@@ -71,7 +71,9 @@ export interface QuizGenerateOutput {
 }
 
 export async function callQuizGenerate(input: QuizGenerateInput): Promise<QuizGenerateOutput> {
-  return apiFetch('/quiz/generate', input);
+  const { data, error } = await supabase.functions.invoke('quiz-generate', { body: input });
+  if (error) throw error;
+  return data as QuizGenerateOutput;
 }
 
 // ============================================================
