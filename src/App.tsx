@@ -17,6 +17,7 @@ import ManualLog from "@/pages/ManualLog";
 import Login from "@/pages/Login";
 import Onboarding from "@/pages/Onboarding";
 import Profile from "@/pages/Profile";
+import Index from "@/pages/Index";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -79,6 +80,7 @@ function LoginRoute() {
 
 const AppRoutes = () => (
   <Routes>
+    <Route path="/home" element={<Index />} />
     <Route path="/login" element={<LoginRoute />} />
     <Route path="/onboarding" element={<OnboardingRoute />} />
     <Route path="/" element={<ProtectedRoute><AppLayout><Dashboard /></AppLayout></ProtectedRoute>} />
