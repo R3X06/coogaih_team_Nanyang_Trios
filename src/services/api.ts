@@ -50,7 +50,9 @@ export interface AttentionAnalyzeOutput {
 }
 
 export async function callAttentionAnalyze(input: AttentionAnalyzeInput): Promise<AttentionAnalyzeOutput> {
-  return apiFetch('/attention/analyze', input);
+  const { data, error } = await supabase.functions.invoke('attention-analyze', { body: input });
+  if (error) throw error;
+  return data as AttentionAnalyzeOutput;
 }
 
 // ============================================================
