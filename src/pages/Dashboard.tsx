@@ -13,6 +13,7 @@ import SkillRadar from '@/components/SkillRadar';
 import RiskMonitor from '@/components/RiskMonitor';
 import AttentionAudit from '@/components/AttentionAudit';
 import CognitiveSnapshotCard from '@/components/CognitiveSnapshotCard';
+import TrajectoryDelta from '@/components/TrajectoryDelta';
 
 export default function Dashboard() {
   const { user, loading: userLoading } = useUser();
@@ -323,6 +324,9 @@ export default function Dashboard() {
 
       {/* Cognitive Snapshot */}
       <CognitiveSnapshotCard />
+
+      {/* Trajectory Delta */}
+      <TrajectoryDelta snapshots={filteredAllSnapshots} />
 
       {/* Recent Activity */}
       {(sessions.length > 0 || manualLogs.length > 0) && (
