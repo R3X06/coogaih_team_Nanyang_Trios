@@ -127,8 +127,7 @@ export default function Dashboard() {
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div className="flex items-center gap-4">
           <div>
-            <h1 className="font-display text-3xl text-gradient mb-0">coogaih</h1>
-            <p className="text-muted-foreground text-sm">Cognitive Guidance AI</p>
+            <h1 className="font-display text-3xl text-gradient mb-0">hi, {user?.display_name || 'there'}</h1>
           </div>
           {subjects.length > 0 && (
             <Select value={activeSubject} onValueChange={setActiveSubject}>
