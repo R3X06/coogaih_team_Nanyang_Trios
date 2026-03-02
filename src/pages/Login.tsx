@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -50,13 +50,15 @@ export default function Login() {
 
       <Card className="w-full max-w-md relative z-10">
         <CardHeader className="text-center space-y-4 pb-2">
-          <div className="flex justify-center">
+          <Link to="/home" className="flex justify-center transition-transform hover:scale-105">
             <OwlLogo className="h-16 w-16" />
-          </div>
+          </Link>
           <div>
-            <CardTitle className="font-display text-3xl text-gradient drop-shadow-[0_0_12px_hsl(var(--primary)/0.5)]">
-              coogaih
-            </CardTitle>
+            <Link to="/home">
+              <CardTitle className="font-display text-3xl text-gradient drop-shadow-[0_0_12px_hsl(var(--primary)/0.5)] hover:drop-shadow-[0_0_20px_hsl(var(--primary)/0.85)] transition-all duration-300">
+                coogaih
+              </CardTitle>
+            </Link>
             <p className="text-muted-foreground text-sm mt-1">Cognitive Guidance AI</p>
           </div>
         </CardHeader>
