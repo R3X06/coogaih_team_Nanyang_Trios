@@ -132,7 +132,7 @@ export default function Dashboard() {
           </div>
           {subjects.length > 0 && (
             <Select value={activeSubject} onValueChange={setActiveSubject}>
-              <SelectTrigger className="w-44 bg-accent/30 h-9 text-xs">
+              <SelectTrigger className="w-44 glass h-9 text-xs">
                 <SelectValue placeholder="All subjects" />
               </SelectTrigger>
               <SelectContent>
@@ -278,7 +278,7 @@ export default function Dashboard() {
                   </div>
                 </div>
                 {secondaryActions.map((a: any, i: number) => (
-                  <div key={i} className="p-3 rounded-lg bg-accent/30 border border-border">
+                  <div key={i} className="p-3 rounded-lg glass border border-border">
                     <p className="text-sm font-medium text-foreground">{a.action}</p>
                     <p className="text-xs text-muted-foreground mt-0.5">{a.reason}</p>
                   </div>
