@@ -37,22 +37,28 @@ export type Database = {
       }
       chapters: {
         Row: {
+          created_at: string
           id: string
           name: string
           order_index: number
           subject_id: string
+          user_id: string | null
         }
         Insert: {
+          created_at?: string
           id?: string
           name: string
           order_index?: number
           subject_id: string
+          user_id?: string | null
         }
         Update: {
+          created_at?: string
           id?: string
           name?: string
           order_index?: number
           subject_id?: string
+          user_id?: string | null
         }
         Relationships: [
           {
@@ -60,6 +66,89 @@ export type Database = {
             columns: ["subject_id"]
             isOneToOne: false
             referencedRelation: "subjects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      manual_logs: {
+        Row: {
+          activity_type: Database["public"]["Enums"]["activity_type"]
+          attachment_url: string | null
+          chapter_id: string | null
+          confidence_post: number | null
+          created_at: string
+          difficulty_post: number | null
+          duration_sec: number
+          id: string
+          issues_faced: string[] | null
+          key_points: string[] | null
+          linked_session_id: string | null
+          subject_id: string | null
+          topic_id: string | null
+          user_id: string
+          what_i_did: string
+        }
+        Insert: {
+          activity_type?: Database["public"]["Enums"]["activity_type"]
+          attachment_url?: string | null
+          chapter_id?: string | null
+          confidence_post?: number | null
+          created_at?: string
+          difficulty_post?: number | null
+          duration_sec?: number
+          id?: string
+          issues_faced?: string[] | null
+          key_points?: string[] | null
+          linked_session_id?: string | null
+          subject_id?: string | null
+          topic_id?: string | null
+          user_id: string
+          what_i_did?: string
+        }
+        Update: {
+          activity_type?: Database["public"]["Enums"]["activity_type"]
+          attachment_url?: string | null
+          chapter_id?: string | null
+          confidence_post?: number | null
+          created_at?: string
+          difficulty_post?: number | null
+          duration_sec?: number
+          id?: string
+          issues_faced?: string[] | null
+          key_points?: string[] | null
+          linked_session_id?: string | null
+          subject_id?: string | null
+          topic_id?: string | null
+          user_id?: string
+          what_i_did?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "manual_logs_chapter_id_fkey"
+            columns: ["chapter_id"]
+            isOneToOne: false
+            referencedRelation: "chapters"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "manual_logs_linked_session_id_fkey"
+            columns: ["linked_session_id"]
+            isOneToOne: false
+            referencedRelation: "sessions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "manual_logs_subject_id_fkey"
+            columns: ["subject_id"]
+            isOneToOne: false
+            referencedRelation: "subjects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "manual_logs_topic_id_fkey"
+            columns: ["topic_id"]
+            isOneToOne: false
+            referencedRelation: "topics"
             referencedColumns: ["id"]
           },
         ]
@@ -205,11 +294,15 @@ export type Database = {
           fragmentation: number | null
           goal_type: Database["public"]["Enums"]["goal_type"]
           id: string
+          issues_faced: string[] | null
+          manual_notes: string | null
+          next_steps: string | null
           notes_file_url: string | null
           notes_ratio: number | null
           practice_ratio: number | null
           primary_topic_id: string | null
           research_ratio: number | null
+          session_source: Database["public"]["Enums"]["session_source"]
           start_time: string
           subject_id: string | null
           switches_count: number | null
@@ -230,11 +323,15 @@ export type Database = {
           fragmentation?: number | null
           goal_type?: Database["public"]["Enums"]["goal_type"]
           id?: string
+          issues_faced?: string[] | null
+          manual_notes?: string | null
+          next_steps?: string | null
           notes_file_url?: string | null
           notes_ratio?: number | null
           practice_ratio?: number | null
           primary_topic_id?: string | null
           research_ratio?: number | null
+          session_source?: Database["public"]["Enums"]["session_source"]
           start_time?: string
           subject_id?: string | null
           switches_count?: number | null
@@ -255,11 +352,15 @@ export type Database = {
           fragmentation?: number | null
           goal_type?: Database["public"]["Enums"]["goal_type"]
           id?: string
+          issues_faced?: string[] | null
+          manual_notes?: string | null
+          next_steps?: string | null
           notes_file_url?: string | null
           notes_ratio?: number | null
           practice_ratio?: number | null
           primary_topic_id?: string | null
           research_ratio?: number | null
+          session_source?: Database["public"]["Enums"]["session_source"]
           start_time?: string
           subject_id?: string | null
           switches_count?: number | null
@@ -361,6 +462,7 @@ export type Database = {
           description: string
           id: string
           name: string
+          user_id: string | null
         }
         Insert: {
           color_accent?: string
@@ -368,6 +470,7 @@ export type Database = {
           description?: string
           id?: string
           name: string
+          user_id?: string | null
         }
         Update: {
           color_accent?: string
@@ -375,30 +478,37 @@ export type Database = {
           description?: string
           id?: string
           name?: string
+          user_id?: string | null
         }
         Relationships: []
       }
       topics: {
         Row: {
           chapter_id: string
+          created_at: string
           embedding_vector: Json | null
           id: string
           name: string
           order_index: number
+          user_id: string | null
         }
         Insert: {
           chapter_id: string
+          created_at?: string
           embedding_vector?: Json | null
           id?: string
           name: string
           order_index?: number
+          user_id?: string | null
         }
         Update: {
           chapter_id?: string
+          created_at?: string
           embedding_vector?: Json | null
           id?: string
           name?: string
           order_index?: number
+          user_id?: string | null
         }
         Relationships: [
           {
@@ -436,7 +546,9 @@ export type Database = {
       [_ in never]: never
     }
     Enums: {
+      activity_type: "revision" | "practice" | "research" | "notes" | "mixed"
       goal_type: "revision" | "practice" | "research" | "notes" | "mixed"
+      session_source: "timer" | "manual"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -564,7 +676,9 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      activity_type: ["revision", "practice", "research", "notes", "mixed"],
       goal_type: ["revision", "practice", "research", "notes", "mixed"],
+      session_source: ["timer", "manual"],
     },
   },
 } as const
