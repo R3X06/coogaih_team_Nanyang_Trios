@@ -1,73 +1,189 @@
-# Welcome to your Lovable project
+# 🦉 Coogaih  
+**An AI-Powered Cognitive Learning Intelligence System**
 
-## Project info
+---
 
-**URL**: https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID
+## 🚀 Overview
 
-## How can I edit this code?
+Coogaih is an AI-powered learning intelligence system that models a student's evolving cognitive state and provides structured, explainable guidance to improve learning outcomes.
 
-There are several ways of editing your application.
+Unlike traditional learning assistants that focus only on correctness or quiz performance, Coogaih tracks behavioral signals, cognitive stability, calibration gaps, and risk progression across time — transforming raw study activity into actionable learning intelligence.
 
-**Use Lovable**
+---
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and start prompting.
+## 🎯 Problem
 
-Changes made via Lovable will be committed automatically to this repo.
+Students today use multiple digital platforms for learning, but they lack:
 
-**Use your preferred IDE**
+- Clear visibility into true concept mastery
+- Insight into whether they are improving or stagnating
+- Awareness of cognitive drift or instability
+- Feedback on whether recommended strategies actually work
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+Learning is non-linear. Study bursts, inactivity gaps, and fluctuating confidence create complex behavioral patterns that are not captured by conventional dashboards.
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+---
 
-Follow these steps:
+## 🧠 Our Solution
 
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
+Coogaih builds a dynamic cognitive model of the learner using:
 
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
+- Study session metrics
+- Behavioral focus patterns
+- Concept stability signals
+- Calibration gaps (confidence vs. difficulty mismatch)
+- Risk progression
 
-# Step 3: Install the necessary dependencies.
-npm i
+The system continuously evaluates state shifts and produces:
 
-# Step 4: Start the development server with auto-reloading and an instant preview.
-npm run dev
-```
+- AI Cognitive Snapshots
+- Trajectory Delta (short-term changes)
+- Drift Detection
+- Recommendation Impact Scoring
+- AI Study Debrief
 
-**Edit a file directly in GitHub**
+---
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+## 🏗 System Architecture
 
-**Use GitHub Codespaces**
+### Frontend
+- React + TypeScript
+- Supabase client
+- Modular dashboard components
+- Glass/obsidian themed UI
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+### Backend
+- Supabase (Database + Edge Functions)
+- Secure JWT-based authentication
+- State-based computation logic
 
-## What technologies are used for this project?
+### AI Layer
+- Azure OpenAI (LLM integration)
+- Structured JSON output enforcement
+- Deterministic evaluation scoring
 
-This project is built with:
+---
 
-- Vite
-- TypeScript
+## 📊 Core Intelligence Modules
+
+### 1️⃣ Cognitive Snapshot
+AI-generated analytical summary of:
+- Stability
+- Risk
+- Calibration
+- Attention behavior
+- Emerging cognitive signals
+
+Structured, explainable, and grounded only in recorded metrics.
+
+---
+
+### 2️⃣ Trajectory Delta
+Compares the latest two learning states to show:
+- Concept Strength change
+- Stability change
+- Risk change
+- Calibration gap change
+- Stamina change
+
+Immediate short-term shift visibility.
+
+---
+
+### 3️⃣ Drift Detection
+Detects instability patterns such as:
+- Consecutive risk increases
+- Stability decline trends
+- Calibration widening
+- Negative learning velocity
+
+Provides early warning before long-term degradation.
+
+---
+
+### 4️⃣ Recommendation Impact Scoring
+Evaluates whether AI advice actually worked by:
+- Comparing baseline state at recommendation time
+- Measuring improvement in future snapshots
+- Producing a weighted effectiveness score (0–100)
+
+This closes the adaptive learning loop.
+
+---
+
+### 5️⃣ AI Study Debrief
+After each session, the system generates:
+- Analytical session summary
+- Key risk identification
+- Recommended focus adjustment
+- Reflective cognitive question
+
+This reinforces metacognition and learner awareness.
+
+---
+
+## 🔐 Responsible AI Design
+
+- Structured JSON outputs only
+- No hallucinated data usage
+- Deterministic metric-based evaluation
+- JWT-secured backend calls
+- User-owned session data
+- No external platform scraping
+
+---
+
+## 📈 What Makes Coogaih Different
+
+Most learning systems:
+- Predict correctness
+- Track scores
+- Suggest generic advice
+
+Coogaih:
+- Models cognitive drift
+- Detects volatility
+- Evaluates its own recommendations
+- Tracks stability, calibration, and risk over time
+- Operates as an adaptive intelligence system
+
+---
+
+## 🛠 Tech Stack
+
 - React
-- shadcn-ui
-- Tailwind CSS
+- TypeScript
+- Supabase
+- Azure OpenAI
+- Edge Functions
+- PostgreSQL
 
-## How can I deploy this project?
+---
 
-Simply open [Lovable](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and click on Share -> Publish.
+## 🧪 Future Roadmap
 
-## Can I connect a custom domain to my Lovable project?
+- Browser extension for behavioral tracking
+- Multi-agent evaluation system
+- Longitudinal mastery modeling
+- Predictive burnout detection
+- Subject-level embedding analysis
 
-Yes, you can!
+---
 
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
+## 🦉 Philosophy
 
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)
+Learning is not linear.
+
+Coogaih treats learning as a dynamic cognitive system — not a checklist of completed tasks.
+
+---
+
+## 👥 Team
+
+Built for AI-driven adaptive education innovation.
+
+---
+
+## 📄 License
+
+MIT License
