@@ -14,6 +14,7 @@ import RiskMonitor from '@/components/RiskMonitor';
 import AttentionAudit from '@/components/AttentionAudit';
 import CognitiveSnapshotCard from '@/components/CognitiveSnapshotCard';
 import TrajectoryDelta from '@/components/TrajectoryDelta';
+import StudyDebriefCard from '@/components/StudyDebriefCard';
 
 export default function Dashboard() {
   const { user, loading: userLoading } = useUser();
@@ -324,6 +325,13 @@ export default function Dashboard() {
 
       {/* Cognitive Snapshot */}
       <CognitiveSnapshotCard />
+
+      {/* AI Study Debrief */}
+      <StudyDebriefCard
+        latestSession={latestSession || null}
+        latestSnapshot={filteredSnapshots[0] || null}
+        learnerProfile={recommendation?.learner_profile || null}
+      />
 
       {/* Trajectory Delta */}
       <TrajectoryDelta snapshots={filteredAllSnapshots} />
