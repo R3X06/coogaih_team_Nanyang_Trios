@@ -38,49 +38,12 @@ Rules:
 - Do NOT output markdown.
 `;
 
-async function callAzureOpenAI(inputMetrics: any) {
-  const endpoint = Deno.env.get("AZURE_OPENAI_ENDPOINT")!;
-  const deployment = Deno.env.get("AZURE_OPENAI_DEPLOYMENT")!;
-  const apiKey = Deno.env.get("AZURE_OPENAI_KEY")!;
-  const apiVersion = Deno.env.get("AZURE_OPENAI_API_VERSION") || "2024-02-15-preview";
-
-  const url =
-    `${endpoint.replace(/\/$/, "")}/openai/deployments/${deployment}/chat/completions?api-version=${apiVersion}`;
-
-  const res = await fetch(url, {
-    method: "POST",
-    headers: {
-      "api-key": apiKey,
-      "content-type": "application/json",
-    },
-    body: JSON.stringify({
-      messages: [
-        { role: "system", content: SYSTEM_PROMPT },
-        { role: "user", content: JSON.stringify(inputMetrics) },
-      ],
-      temperature: 0.15,
-      max_tokens: 450,
-      response_format: { type: "json_object" },
-    }),
-  });
-
-  if (!res.ok) {
-    const err = await res.text();
-    throw new Error(`Azure OpenAI error: ${res.status} ${err}`);
-  }
-
-  const data = await res.json();
-  const content = data.choices?.[0]?.message?.content ?? "{}";
-  return JSON.parse(content);
-}
-
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    // IMPORTANT: Use caller JWT (RLS safe). Do NOT use service role.
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const anonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
     const authHeader = req.headers.get("Authorization") ?? "";
@@ -99,7 +62,6 @@ Deno.serve(async (req) => {
 
     const user_id = userData.user.id;
 
-    // Gather metrics in parallel
     const [sessionsRes, snapshotsRes, recsRes, logsRes] = await Promise.all([
       supabase.from("sessions").select("*").eq("user_id", user_id).order("start_time", { ascending: false }).limit(10),
       supabase.from("state_snapshots").select("*").eq("user_id", user_id).order("timestamp", { ascending: false }).limit(50),
@@ -154,9 +116,48 @@ Deno.serve(async (req) => {
         : null,
     };
 
-    const summary = await callAzureOpenAI(inputMetrics);
+    // Use Lovable AI Gateway
+    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
+    if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
 
-    // Return in the shape your UI expects: { snapshot: ... }
+    const aiResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${LOVABLE_API_KEY}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        model: "google/gemini-3-flash-preview",
+        messages: [
+          { role: "system", content: SYSTEM_PROMPT },
+          { role: "user", content: JSON.stringify(inputMetrics) },
+        ],
+        temperature: 0.15,
+        max_tokens: 450,
+      }),
+    });
+
+    if (!aiResponse.ok) {
+      if (aiResponse.status === 429) {
+        return new Response(JSON.stringify({ error: "Rate limit exceeded. Try again shortly." }), {
+          status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      if (aiResponse.status === 402) {
+        return new Response(JSON.stringify({ error: "Credits exhausted. Please top up." }), {
+          status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      const t = await aiResponse.text();
+      console.error("AI gateway error:", aiResponse.status, t);
+      throw new Error(`AI gateway error: ${aiResponse.status}`);
+    }
+
+    const data = await aiResponse.json();
+    const content = data.choices?.[0]?.message?.content ?? "{}";
+    const cleaned = content.replace(/```json\n?/g, "").replace(/```\n?/g, "").trim();
+    const summary = JSON.parse(cleaned);
+
     return new Response(JSON.stringify({ snapshot: summary }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
